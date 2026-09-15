@@ -16,42 +16,61 @@ library(patchwork)
 library(magrittr)
 library(dplyr)
 ```
-
+Here we create a set of MIC data consisting of 300 observations. The simulate_mics function formats MICs as intervals, the format used to input the data.
 ```{r}
-set.seed(103)
-mic_data = simulate_mics(`E[X|T,C]` = function(t, c) {
-  case_when(c == "1" ~ -4 + (0.24 * t) - (0.0055 *
-                                            t^2), c == "2" ~ 3 + 0.08 * t, TRUE ~ NaN)
-}) %>% mutate(MIC = case_when(
+set.seed(102)
+mic_data = simulate_mics(
+  n = 300,
+  `E[X|T,C]` = function(t, c) {
+  case_when(
+    c == "1" ~ -4 + (0.24 * t) - (0.0055 * t^2), 
+    c == "2" ~ 3 + 0.08 * t, TRUE ~ NaN)
+},
+high_con = 5,
+low_con = -4)
+mic_data %>% select(t, left_bound, right_bound) %>% head(10)
+```
+
+However MICs are typically reported as a single value indicating the lowest tested concentration that inhibited growth, or indicating that the true MIC lies above the highest tested concentration or is less than or equal to the lowest.
+```{r}
+mic_data = mic_data %>% mutate(MIC = case_when(
   right_bound == Inf ~ paste0(">", 2^left_bound),
   left_bound == -Inf ~ paste0("<=", 2^right_bound),
   TRUE ~ paste0(2^right_bound)
 )) %>% select(MIC, t)
+mic_data %>% head(10)
 ```
 
+The function import_mics_with_metadata is used to convert MIC data from the reported single-value format into intervals that serve as an input to the model-fitting algorithm.
 ```{r}
 imported_data = import_mics_with_metadata(data = mic_data, mic_column = "MIC", metadata_columns = "t")
-head(imported_data)
+imported_data %>% head(10)
 ```
+
+The preview data function plots the data, where each vertical line segment represents the censoring interval for a single observation.
+```{r}
+imported_data %>% preview_data(title = "Example Data Set")
+```
+The fit_EM() function uses the EM algorithm to fit a model to the data. If the pre_set_degrees parameter is not provided, a cross validation model is used to select the appropriate degrees of freedom for each component mean model, where the maximum degrees of freedom is set by max_degree and the degree_sets parameter determines whether both components must use the same degrees of freedom ("matched") or not ("independent").
 
 ```{r}
-
-model_fit = fit_EM(max_degree = 5, visible_data = imported_data, verbose = 0)
-
+model_fit = fit_EM(pre_set_degrees = c(4,4), 
+                   visible_data = imported_data, 
+                   verbose = 0, 
+                   degree_sets = "independent",
+                   non_linear_term = "t",
+                   pi_formula = c == "2" ~ s(t, k = 4)
+                   )
 ```
-
-```{r}
-model_fit$cv_results
-```
-
+The plot_likelihood function plots the log-likelihood at each step of the EM algorithm
 
 ```{r}
 plot_likelihood(model_fit$likelihood)
 
 ```
 
-
+The plot_fm function plots the fitted model, the component mean plots in the upper panel and component mixing weights in the lower panel.
 ```{r}
-plot_fm(model_fit, title = "Model on Imported Data", add_log_reg = TRUE, ecoff = 0.5)
+plot_fm(model_fit, title = "Model on Imported Data", add_log_reg = TRUE, ecoff = 0.5, start_date = 2000) 
 ```
 
