@@ -8,7 +8,7 @@
 #' @param data either possible_data or a set of mic data ready you want to run import_mics on
 #' @param split_by String, which value to dichotomize the MICs at: "ecoff" (default), "visual_split", "s_breakpoint" (or "S"), or "r_breakpoint" (or "R"). The corresponding argument must be supplied.
 #' @param data_type use either "possible_data" if passing in a possible_data object or "import" if you want to import mics and run logistic regression
-#' @param drug NULL if using possible_data, if importing data should be the name of the column of the mics or a vector of the mic column and the sign colomn
+#' @param drug NULL if using possible_data, if importing data should be the name of the column of the mics or a vector of the mic column and the sign column
 #' @param date_col string, what is the name of the column in the data that corresponds to time of sampling
 #' @param date_type string, either "decimal", "date", or "year" use decimal if using t from possible data, date or year if importing mic data and the date column is a date or just a year respectively
 #' @param first_year NULL if date_type is "decimal", otherwise a numeric year or decimal year value if using "year" or "date" for date_type respectively

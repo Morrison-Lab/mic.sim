@@ -3,7 +3,7 @@
 %   R/initial_weighting_fixed_regression_at_boundaries.R
 \name{initial_weighting_fixed_regression_at_boundaries}
 \alias{initial_weighting_fixed_regression_at_boundaries}
-\title{Intial Weighting Scheme: Fixed Regression at Boundaries}
+\title{Initial Weighting Scheme: Fixed Regression at Boundaries}
 \usage{
 initial_weighting_fixed_regression_at_boundaries(
   visible_data,

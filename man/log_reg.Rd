@@ -26,7 +26,7 @@ log_reg(
 
 \item{data_type}{use either "possible_data" if passing in a possible_data object or "import" if you want to import mics and run logistic regression}
 
-\item{drug}{NULL if using possible_data, if importing data should be the name of the column of the mics or a vector of the mic column and the sign colomn}
+\item{drug}{NULL if using possible_data, if importing data should be the name of the column of the mics or a vector of the mic column and the sign column}
 
 \item{date_col}{string, what is the name of the column in the data that corresponds to time of sampling}
 
