@@ -1,0 +1,22 @@
+# Workflow derived from https://github.com/Morrison-Lab/gha/blob/main/examples/check-r-package.yml
+# The lab's standard check suite for R package repositories: repository
+# hygiene (tracked junk files, committed secrets, non-standard characters,
+# semantic line breaks on changed lines, typos, YAML, workflow and Markdown
+# lint), AI-prose tells, duplicate roxygen docs, one function per file, and
+# Air formatting. Supersedes the standalone check-non-standard-chars caller.
+name: Check R package
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    permissions:
+      contents: read
+    uses: Morrison-Lab/gha/.github/workflows/check-r-package.yml@v3

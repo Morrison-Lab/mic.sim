@@ -1,0 +1,9 @@
+# zizmor (run by the lint-workflows check) flags actions referenced by tag
+# instead of commit SHA. This repo pins Morrison-Lab/gha and r-lib/actions by
+# major tag on purpose so fixes arrive without a PR per release; Dependabot
+# (.github/dependabot.yml) keeps the tags current.
+rules:
+  unpinned-uses:
+    config:
+      policies:
+        "*": ref-pin
