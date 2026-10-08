@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulation_run.R
 \name{simulation_run}
 \alias{simulation_run}
-\title{Title}
+\title{Simulate a Data Set and Fit a Model to It}
 \usage{
 simulation_run(
   i = 100,
@@ -62,11 +62,11 @@ simulation_run(
 
 \item{sd_vector}{A vector with length equal to the number of components, with the elements named "1", "2",...}
 
-\item{covariate_list}{List of covariates, each one has its own format, see examples of numeric and categorical covariates}
+\item{covariate_list}{List of covariates, each one has its own format, see examples of numeric and categorical covariates. A numeric covariate is c("numeric", "normal", mean, sd) or c("numeric", "uniform", min, max); a categorical covariate is c("categorical", p_a, p_b, ...) giving the probabilities of levels "a", "b", .... The covariates are named covariate_1, covariate_2, ... in the order given. NULL for no covariates.}
 
-\item{covariate_effect_vector}{Vector of covariate effects corresponding to the covariates listed above}
+\item{covariate_effect_vector}{Vector of covariate effects corresponding to the covariates listed above: an intercept followed by one coefficient per numeric covariate and one per non-reference level of each categorical covariate (the columns of the model matrix of the covariates). Ignored if covariate_list is NULL.}
 
-\item{conc_limits_table}{If concentration limits vary by some covariate use this table to specify limits for each value of the covariate. Is right-joined to data by the covariate values}
+\item{conc_limits_table}{If concentration limits vary by some covariate use this table to specify limits for each value of the covariate. Is joined to data by the covariate values. The limit columns must be named low_cons and high_cons (log2 scale).}
 
 \item{low_con}{If concentration limits are constant for all observations, used to set the lowest tested concentration on the log2(MIC) scale}
 
@@ -74,8 +74,70 @@ simulation_run(
 
 \item{scale}{What scale ("log" or "MIC") the data returned by simulate_mics is. Default is "log" which corresponds to log2(MIC)}
 
-\item{max_out_break}{}
+\item{model}{String, "pspline" or "polynomial". Which non-linear term should be used in model}
+
+\item{approach}{String, either "full" or "reduced". Full model attempts to fit mu models to each component, reduced models does not attempt to fit a mu model for one component. Suitable if one component is entirely or nearly entirely outside the range of tested concentrations}
+
+\item{pi_formula}{Formula, for the component weight model. Model is fit using mgcv's gam function. Nonlinear terms include s() and lo(). Basis of s() function can be changed using bs argument to s(). Use c == "2" for the left side of the formula.}
+
+\item{ncomp}{Numeric, number of components to be fitted. When fitting a reduced model where one component is not estimated, that component should still contribute to the value in ncomp. E.g. a reduced model where the upper component is fixed and mu for the lower component is being estimated has a value of ncomp = 2.}
+
+\item{ecoff}{String or numeric, represents the largest MIC value of the WT distribution on MIC scale. Model will use this in combination with the fixed side to assume the observations on the non-fixed side of the ecoff are not part of the component on the fixed side of the ecoff. Can be a number on the MIC scale: 32 or a string representation of WT classification "<=32", should be inclusive}
+
+\item{pre_set_degrees}{Vector of numeric values with length equal to number of components where mu is being estimated. NULL if cross validation is being used to select degrees (polynomial) or degrees of freedom (pspline) for mu model(s).}
+
+\item{max_degree}{Numeric, must be an integer > 0. Highest value to test in cross validation for degrees (polynomial) or degrees of freedom (pspline) for mu model(s).}
+
+\item{degree_sets}{String: "independent" or "matched", if using cross validation to select appropriate degrees (polynomial) or degrees of freedom (pspline) for mu model(s), whether to test a grid of all possible combinations("independent") or fix the degrees of the components to match ("matched")}
+
+\item{nfolds}{Numeric, number of folds for the cross validation to select appropriate degrees (polynomial) or degrees of freedom (pspline) for mu model(s)}
+
+\item{non_linear_term}{String, non-linear term to be included in the model. Variable in the pspline term in the pspline model or in the polynomial term in the polynomial model.}
+
+\item{covariates}{String, covariates to be included in mu model aside from the non-linear term.}
+
+\item{fixed_side}{String, if using a reduced model, specify which component the algorithm won't estimate mu for. "RC" corresponds to the upper component, "LC" corresponds to the lower. NULL if using the full model.}
+
+\item{extra_row}{Logical, if using a reduced model, the highest ("RC") or lowest ("LC") MIC value may be included in the set observations weighted as possibly in the fixed component}
+
+\item{max_it}{Numeric, maximum number of iterations for the EM algorithm for any given model fitting.}
+
+\item{tol_ll}{Numeric, maximum tolerance for change in likelihood between steps of the algorithm for model convergence to be achieved.}
+
+\item{pi_link}{String: "logit" or "identity", link function for the generalized linear model fit for the pi model (component weights).}
+
+\item{verbose}{Numeric, controls amount of information printed during model fitting}
+
+\item{model_coefficient_tolerance}{Numeric, maximum tolerance for change in model coefficients (including spline terms) between steps of the algorithm for model convergence to be achieved.}
+
+\item{maxiter_survreg}{Maximum iterations used in survreg model fitting, default is 30.}
+
+\item{initial_weighting}{Numeric, For the "full" model fitting: if 1: initial observation weights are estimated using linear regression at the highest and lowest tested concentrations. If 2, used a randomized start suitable for simulation studies on model validity but otherwise not recommended. If 3 or greater, fits a linear models to the components and estimates initial weights based on this model fit. For the reduced model fitting: 1 sets initial weights corresponding to fixed side (and extra_row) where observations not outside the range on the side corresponding to the fixed side are forced to be in the component where mu is being estimated. For initial weighting two a linear model is fit for the component still being estimated to provide initial observation weights.}
+
+\item{sd_initial}{Numeric, value greater than 0 and less than 1. Proportion of the range from the highest concentration to lowest concentration that is used as the initial estimate of sigma for the estimated components. Default is 0.2}
+
+\item{reruns_allowed}{Numeric, if the cross-validation for a particular combination of degrees (polynomial) or degrees of freedom (pspline) fails, how many repeat attempts should be allowed?}
+
+\item{max_out_break}{Logical, if TRUE when a CV fold reaches maximum iterations it breaks the loop and moves to next rerun if applicable}
+}
+\value{
+A list with elements result (the output of fit_EM(), or NULL if it
+  failed), error (the error condition, or NULL if the fit succeeded), and
+  iteration_number (the value of i).
 }
 \description{
-Title
+Runs one replicate of a simulation study: sets the random seed to i,
+simulates a data set with simulate_mics(), and fits a model to it with
+fit_EM(). Errors from fit_EM() are captured rather than raised, so that
+batches of simulations can be run with, e.g., purrr::map().
+}
+\details{
+The simulated component means are set by the argument \code{`E[X|T,C]`}; see
+\code{\link{simulate_mics}}.
+}
+\examples{
+\donttest{
+run = simulation_run(i = 1, n = 100, pre_set_degrees = c(4, 4), max_it = 50, verbose = 0)
+run$result$converge
+}
 }

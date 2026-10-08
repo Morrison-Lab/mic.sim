@@ -2,7 +2,7 @@
 % Please edit documentation in R/preview_data.R
 \name{preview_data}
 \alias{preview_data}
-\title{Plot Data}
+\title{Plot MIC Data}
 \usage{
 preview_data(
   data,
@@ -25,6 +25,8 @@ preview_data(
 
 \item{y_max}{Maximum value for plot, some extra space will be added below so the highest tested concentration is a reasonable value}
 
+\item{ECOFF}{Numeric, string, or NULL, an ECOFF to draw as a horizontal line (e.g. 4 or "<=4"); NULL for no line}
+
 \item{ECOFF_scale}{defaults to "MIC", meaning the ECOFF provided will be in concentration directly, if you have already taken log2(ECOFF) then change this to "log"}
 
 \item{covariate}{string, name of a column in data}
@@ -33,6 +35,13 @@ preview_data(
 
 \item{expand.grid.axis.lines}{logical, if TRUE increases linewidth of axes and gridlines to 0.75}
 }
+\value{
+A ggplot object showing each observation's censoring interval
+  (log2 scale) against time, with arrows for left- and right-censored values.
+}
 \description{
 Produces a basic plot of data generated from simulate_mics or import_mics_with_metadata
+}
+\examples{
+preview_data(simulate_mics(n = 100), title = "Simulated MICs", ECOFF = 2)
 }

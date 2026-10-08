@@ -4,15 +4,18 @@
 #'
 #' @inheritParams fit_EM
 #'
-#' @param non_linear_term
 #' @param degrees Vector of length equal to the number of component means being estimated. Elements are numeric and correspond to the number of degrees (polynomial) or degrees of freedom (pspline) in each mu model. First element corresponds to lowest component, last element corresponds to highest component.
-#' @param covariates
-#' @param model String, "pspline" or "polynomial". Which non-linear term should be used in model
+#' @param model String, "pspline" (or equivalently "surv") or "polynomial". Which non-linear term should be used in model
 #'
-#' @return
+#' @return A list with one formula per element of degrees. Each formula has
+#'   Surv(time = left_bound, time2 = right_bound, type = 'interval2') as its
+#'   response and pspline(non_linear_term, df = degree) or
+#'   poly(non_linear_term, degree = degree), plus any covariates, as its terms.
 #' @export
 #'
 #' @examples
+#' write_all_formulas(non_linear_term = "t", degrees = c(4, 4), covariates = NULL,
+#'                    model = "pspline")
 write_all_formulas = function(non_linear_term, degrees, covariates, model){
   if(model == "polynomial"){
     purrr::map(degrees, ~ write_single_formula.polynomial(non_linear_term, .x, covariates)) %>% return()

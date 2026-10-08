@@ -13,8 +13,18 @@ write_all_formulas(non_linear_term, degrees, covariates, model)
 
 \item{covariates}{String, covariates to be included in mu model aside from the non-linear term.}
 
-\item{model}{String, "pspline" or "polynomial". Which non-linear term should be used in model}
+\item{model}{String, "pspline" (or equivalently "surv") or "polynomial". Which non-linear term should be used in model}
+}
+\value{
+A list with one formula per element of degrees. Each formula has
+  Surv(time = left_bound, time2 = right_bound, type = 'interval2') as its
+  response and pspline(non_linear_term, df = degree) or
+  poly(non_linear_term, degree = degree), plus any covariates, as its terms.
 }
 \description{
 Used to write the formulas for mu models, returns either a single formula or a list of formulas.
+}
+\examples{
+write_all_formulas(non_linear_term = "t", degrees = c(4, 4), covariates = NULL,
+                   model = "pspline")
 }
