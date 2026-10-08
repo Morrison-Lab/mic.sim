@@ -34,7 +34,8 @@ Imports:
     tibble,
     tidyr,
     utils,
-    viridisLite
+    viridisLite,
+    rlang
 Suggests: 
     knitr,
     rmarkdown,
