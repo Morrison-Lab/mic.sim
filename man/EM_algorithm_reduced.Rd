@@ -2,7 +2,7 @@
 % Please edit documentation in R/EM_algorithm_reduced.R
 \name{EM_algorithm_reduced}
 \alias{EM_algorithm_reduced}
-\title{Title}
+\title{Fit a Reduced Mixture Model Using the EM Algorithm}
 \usage{
 EM_algorithm_reduced(
   fixed_side = "RC",
@@ -42,9 +42,9 @@ EM_algorithm_reduced(
 
 \item{visible_data}{Data frame, data including the left and right bound of the MICs (use import_mics_with_metadata to format correctly) and any covariates (including the non-linear term)}
 
-\item{model}{String, "pspline" or "polynomial". Which non-linear term should be used in model}
+\item{model}{String, "surv" (equivalently "pspline") or "polynomial" to fit the mu models with survreg(), or "mgcv" to fit them with mgcv::gam(). Must match the terms used in mu_formula.}
 
-\item{mu_formula}{A formula for a survreg object from the survival package, left side of equation should be a surv object using "interval2" format, right side should be the non-linear term (polynomial or pspline) and any covariates. Can be a single formula or a list of formulas where length is equal to the number of components where the trend in the mean is being estimated.}
+\item{mu_formula}{A formula for a survreg object from the survival package, left side of equation should be a surv object using "interval2" format, right side should be the non-linear term (polynomial or pspline) and any covariates. Only the mean of the component that is not fixed is modeled.}
 
 \item{pi_formula}{Formula, for the component weight model. Model is fit using mgcv's gam function. Nonlinear terms include s() and lo(). Basis of s() function can be changed using bs argument to s(). Use c == "2" for the left side of the formula.}
 
@@ -54,21 +54,21 @@ EM_algorithm_reduced(
 
 \item{tol_ll}{Numeric, maximum tolerance for change in likelihood between steps of the algorithm for model convergence to be achieved.}
 
-\item{browse_at_end}{For internal model testing}
+\item{browse_at_end}{For internal model testing (currently unused)}
 
-\item{browse_each_step}{For internal model testing}
+\item{browse_each_step}{For internal model testing, logical, if TRUE calls browser() at the end of each EM step}
 
-\item{plot_visuals}{For internal model testing}
+\item{plot_visuals}{For internal model testing, logical, if TRUE (together with browse_each_step) plots the fit at each step}
 
-\item{prior_step_plot}{For internal model testing}
+\item{prior_step_plot}{For internal model testing, logical, if TRUE the step plots also show the fit from the previous step}
 
-\item{pause_on_likelihood_drop}{For internal model testing}
+\item{pause_on_likelihood_drop}{For internal model testing, logical, if TRUE calls browser() when the log likelihood decreases between steps}
 
 \item{pi_link}{String: "logit" or "identity", link function for the generalized linear model fit for the pi model (component weights).}
 
 \item{verbose}{Numeric, controls amount of information printed during model fitting}
 
-\item{model_coefficient_tolerance}{Numeric, maximum tolerance for change in model coefficients (insluding spline terms) between steps of the algorithm for model convergence to be achieved.}
+\item{model_coefficient_tolerance}{Numeric, maximum tolerance for change in model coefficients (including spline terms) between steps of the algorithm for model convergence to be achieved.}
 
 \item{maxiter_survreg}{Maximum iterations used in survreg model fitting, default is 30.}
 
@@ -76,12 +76,27 @@ EM_algorithm_reduced(
 
 \item{sd_initial}{Numeric, value greater than 0 and less than 1. Proportion of the range from the highest concentration to lowest concentration that is used as the initial estimate of sigma for the estimated components. Default is 0.2}
 
-\item{stop_on_likelihood_drop}{For internal model testing}
+\item{stop_on_likelihood_drop}{For internal model testing, logical, if TRUE stops the algorithm (with converge = "likelihood decreased") when the log likelihood decreases between steps}
 
 \item{non_linear_term}{String, non-linear term to be included in the model. Variable in the pspline term in the pspline model or in the polynomial term in the polynomial model.}
 
 \item{covariates}{String, covariates to be included in mu model aside from the non-linear term.}
+
+\item{scale}{String or NULL, the scale of left_bound and right_bound in visible_data: "log" (log2 MIC; "log2" and "fold" are also accepted) or "MIC" (concentration). Only used when visible_data does not already have a "scale" attribute (import_mics_with_metadata() and simulate_mics() set one); data on the "MIC" scale are converted to log2 before fitting.}
+}
+\value{
+A list with the same elements as the output of
+  \code{\link{EM_algorithm}} (likelihood, model, possible_data, pi_model,
+  mu_model, steps, converge, ncomp, prior_step_models, sd_initial,
+  mu_formula), where mu_model contains the model for the estimated component
+  only, plus fixed_side, extra_row, ecoff, and ECOFF (the ecoff on the log2
+  scale, or NA).
 }
 \description{
-Title
+Fits a two-component mixture model to interval-censored log2 MIC data using
+the EM algorithm, but estimates a mean (mu) model for only one component; the
+other component (chosen by fixed_side) is assumed to lie entirely or nearly
+entirely outside the range of tested concentrations. This is the fitting
+routine that fit_EM() calls when approach = "reduced"; most users should call
+fit_EM() instead.
 }

@@ -1,48 +1,28 @@
-#' Title
+#' Simulate a Data Set and Fit a Model to It
+#'
+#' Runs one replicate of a simulation study: sets the random seed to i,
+#' simulates a data set with simulate_mics(), and fits a model to it with
+#' fit_EM(). Errors from fit_EM() are captured rather than raised, so that
+#' batches of simulations can be run with, e.g., purrr::map().
+#'
+#' The simulated component means are set by the argument \code{`E[X|T,C]`}; see
+#' \code{\link{simulate_mics}}.
 #'
 #' @inheritParams simulate_mics
-#' @inheritParams
+#' @inheritParams fit_EM
 #'
 #' @param i Seed, used when running batches of simulations
-#' @param n
-#' @param t_dist
-#' @param pi
-#' @param `E[X|T,C]`
-#' @param sd_vector
-#' @param covariate_list
-#' @param covariate_effect_vector
-#' @param conc_limits_table
-#' @param low_con
-#' @param high_con
-#' @param scale
-#' @param model
-#' @param approach
-#' @param pi_formula
-#' @param ncomp
-#' @param ecoff
-#' @param pre_set_degrees
-#' @param max_degree
-#' @param degree_sets
-#' @param nfolds
-#' @param non_linear_term
-#' @param covariates
-#' @param fixed_side
-#' @param extra_row
-#' @param max_it
-#' @param tol_ll
-#' @param pi_link
-#' @param verbose
-#' @param model_coefficient_tolerance
-#' @param maxiter_survreg
-#' @param initial_weighting
-#' @param sd_initial
-#' @param reruns_allowed
-#' @param max_out_break
 #'
-#' @return
+#' @return A list with elements result (the output of fit_EM(), or NULL if it
+#'   failed), error (the error condition, or NULL if the fit succeeded), and
+#'   iteration_number (the value of i).
 #' @export
 #'
 #' @examples
+#' \donttest{
+#' run = simulation_run(i = 1, n = 100, pre_set_degrees = c(4, 4), max_it = 50, verbose = 0)
+#' run$result$converge
+#' }
 simulation_run = function(i = 100,
                           n = 300,
                           t_dist = function(n) {

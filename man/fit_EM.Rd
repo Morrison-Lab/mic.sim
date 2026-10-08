@@ -69,17 +69,33 @@ fit_EM(
 
 \item{verbose}{Numeric, controls amount of information printed during model fitting}
 
-\item{model_coefficient_tolerance}{Numeric, maximum tolerance for change in model coefficients (insluding spline terms) between steps of the algorithm for model convergence to be achieved.}
+\item{model_coefficient_tolerance}{Numeric, maximum tolerance for change in model coefficients (including spline terms) between steps of the algorithm for model convergence to be achieved.}
 
 \item{maxiter_survreg}{Maximum iterations used in survreg model fitting, default is 30.}
 
-\item{initial_weighting}{Numeric, For the "full" model fitting: if 1: initial observation weights are estimated using linear regression at the highest and lowest tested concentrations. If 2, used a randomized start suitable for simulation studies on model validity but otherwise not recommended. If 3 or greater, fits a linear models to the components and estimates intial weights based on this model fit. For the reduced model fitting: 1 sets initial weights corresponding to fixed side (and extra_row) where observations not outside the range on the side corresponding to the fixed side are forced to be in the component where mu is being estimated. For initial weighting two a linear model is fit for the component still being estimated to provide initial observation weights.}
+\item{initial_weighting}{Numeric, For the "full" model fitting: if 1: initial observation weights are estimated using linear regression at the highest and lowest tested concentrations. If 2, used a randomized start suitable for simulation studies on model validity but otherwise not recommended. If 3 or greater, fits a linear models to the components and estimates initial weights based on this model fit. For the reduced model fitting: 1 sets initial weights corresponding to fixed side (and extra_row) where observations not outside the range on the side corresponding to the fixed side are forced to be in the component where mu is being estimated. For initial weighting two a linear model is fit for the component still being estimated to provide initial observation weights.}
 
 \item{sd_initial}{Numeric, value greater than 0 and less than 1. Proportion of the range from the highest concentration to lowest concentration that is used as the initial estimate of sigma for the estimated components. Default is 0.2}
+
+\item{scale}{String or NULL, the scale of left_bound and right_bound in visible_data: "log" (log2 MIC; "log2" and "fold" are also accepted) or "MIC" (concentration). Only used when visible_data does not already have a "scale" attribute (import_mics_with_metadata() and simulate_mics() set one); data on the "MIC" scale are converted to log2 before fitting.}
 
 \item{reruns_allowed}{Numeric, if the cross-validation for a particular combination of degrees (polynomial) or degrees of freedom (pspline) fails, how many repeat attempts should be allowed?}
 
 \item{max_out_break}{Logical, if TRUE when a CV fold reaches maximum iterations it breaks the loop and moves to next rerun if applicable}
+}
+\value{
+A list describing the fitted model. Its main elements are
+  \code{likelihood} (a tibble of the log-likelihood at each EM step),
+  \code{possible_data} (the data with one row per observation and component,
+  including the posterior component probabilities \code{P(C=c|y,t)}),
+  \code{mu_model} (a list of fitted \code{survreg} models for the component means),
+  \code{pi_model} (the fitted \code{gam} model for the component weights),
+  \code{converge} ("YES", "NO", or "iterations" if \code{max_it} was reached),
+  \code{steps}, \code{ncomp}, \code{mu_formula}, and \code{cv_results} (a tibble of
+  cross-validated log-likelihoods for each degree set tested, or NULL if
+  \code{pre_set_degrees} was supplied). Reduced models also include
+  \code{fixed_side}, \code{extra_row}, \code{ecoff}, and \code{ECOFF}. See
+  \code{\link{EM_algorithm}} and \code{\link{EM_algorithm_reduced}} for details.
 }
 \description{
 Function that uses the EM Algorithm to fit a model to output from either import_mics_with_metadata() or simulate_mics().

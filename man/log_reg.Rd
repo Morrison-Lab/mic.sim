@@ -2,7 +2,7 @@
 % Please edit documentation in R/log_reg.R
 \name{log_reg}
 \alias{log_reg}
-\title{Title}
+\title{Logistic Regression for Proportion Above an MIC Split Over Time}
 \usage{
 log_reg(
   data,
@@ -22,6 +22,8 @@ log_reg(
 \arguments{
 \item{data}{either possible_data or a set of mic data ready you want to run import_mics on}
 
+\item{split_by}{String, which value to dichotomize the MICs at: "ecoff" (default), "visual_split", "s_breakpoint" (or "S"), or "r_breakpoint" (or "R"). The corresponding argument must be supplied.}
+
 \item{data_type}{use either "possible_data" if passing in a possible_data object or "import" if you want to import mics and run logistic regression}
 
 \item{drug}{NULL if using possible_data, if importing data should be the name of the column of the mics or a vector of the mic column and the sign colomn}
@@ -40,8 +42,26 @@ log_reg(
 
 \item{visual_split}{string or numeric, see plot_fm()}
 
-\item{k}{variable passed into logistic regression GAM}
+\item{k}{NULL (default) or a value passed as argument k to the mgcv::gam() call that fits the logistic regression}
+}
+\value{
+A fitted \code{gam} object (from mgcv) for the logistic regression
+  of the dichotomized outcome (1 = resistant or non-wild-type, i.e. above the
+  split; 0 = otherwise) on s(t).
 }
 \description{
-Title
+Dichotomizes MICs at an ECOFF, a breakpoint, or a visual split and fits a
+logistic generalized additive model (binomial family, smooth term s(t)) for
+the proportion of isolates above the split over time. Used by plot_fm() to
+compare the estimated component weights with these simpler summaries.
+}
+\examples{
+\donttest{
+data = simulate_mics()
+output = fit_EM(model = "pspline", approach = "full", pre_set_degrees = c(4, 4),
+                visible_data = data, max_it = 300, verbose = 0)
+log_reg(output$possible_data, split_by = "ecoff", data_type = "possible_data",
+        drug = NULL, date_col = "t", date_type = "decimal", first_year = NULL,
+        ecoff = 2)
+}
 }

@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_mean.R
 \name{plot_mean}
 \alias{plot_mean}
-\title{Title}
+\title{Plot Data and Fitted Component Means}
 \usage{
 plot_mean(
   output,
@@ -23,9 +23,50 @@ plot_mean(
 )
 }
 \arguments{
-\item{n_fitted_components}{}
+\item{output}{List, output of a fit_EM()}
+
+\item{df}{Data frame, output$possible_data with added columns cens ("lc",
+"rc", or "int") and mid (a plotting position for each observation), as
+created in plot_fm()}
+
+\item{results}{Tibble with columns c (component number) and dnc (logical,
+TRUE if the mu model for that component did not converge); only used for
+reduced or partially converged models}
+
+\item{start_date}{Integer, value at which x axis should start (year). Time t is plotted as the date start_date + t (in decimal years).}
+
+\item{fitted_comp}{The fitted mu model of the single component being plotted
+when only one component mean is shown, otherwise NULL}
+
+\item{title}{String, title of plot}
+
+\item{plot_min}{Numeric, lower limit of the y axis (log2 scale)}
+
+\item{plot_max}{Numeric, upper limit of the y axis (log2 scale)}
+
+\item{ecoff}{Numeric or String, represents an ECOFF on the MIC Scale to define the upper limit of the WT component, A number is interpreted as WT being <= ECOFF.}
+
+\item{s_breakpoint}{String, represents S breakpoint (e.g. <= 2) on MIC scale (not log2 scale)}
+
+\item{r_breakpoint}{String, represents R breakpoint (e.g. >= 32) on MIC scale (not log2 scale)}
+
+\item{visual_split}{Numeric or String, represents a visual split point on the MIC scale to define the upper limit of the WT component. A number is interpreted as WT being <= visual_split}
+
+\item{x_axis_t_breaks}{Numerical vector, vector of values on the scale of t, the time variable in years from the start of the study. Helpful to use seq(0,t_max, by = spacing) where t_max is the length of study period and spacing is how many years to separate major ticks by}
+
+\item{assumed_components}{Numeric, number of components in the model,
+including any component whose mean was not estimated (output$ncomp)}
+
+\item{n_fitted_components}{Numeric, number of components whose mean model
+was estimated and converged (0, 1, or 2)}
+}
+\value{
+A ggplot object.
 }
 \description{
-Title
+Builds the upper panel of plot_fm(): the interval-censored log2 MICs over
+time with the fitted component means (and their confidence bands) and any
+ECOFF, breakpoint, or visual split lines. Called by plot_fm(), which prepares
+all of its arguments; it is not usually called directly.
 }
 \keyword{internal}

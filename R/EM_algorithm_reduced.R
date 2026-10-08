@@ -1,39 +1,28 @@
-#' Title
+#' Fit a Reduced Mixture Model Using the EM Algorithm
 #'
-#' @inheritParams fit_EM
+#' Fits a two-component mixture model to interval-censored log2 MIC data using
+#' the EM algorithm, but estimates a mean (mu) model for only one component; the
+#' other component (chosen by fixed_side) is assumed to lie entirely or nearly
+#' entirely outside the range of tested concentrations. This is the fitting
+#' routine that fit_EM() calls when approach = "reduced"; most users should call
+#' fit_EM() instead.
+#'
 #' @inheritParams EM_algorithm
+#' @inheritParams fit_EM
 #'
-#' @param fixed_side
-#' @param extra_row
-#' @param ecoff
-#' @param visible_data
-#' @param model
-#' @param mu_formula
-#' @param pi_formula
-#' @param max_it
-#' @param ncomp
-#' @param tol_ll
-#' @param browse_at_end
-#' @param browse_each_step
-#' @param plot_visuals
-#' @param prior_step_plot
-#' @param pause_on_likelihood_drop
-#' @param pi_link
-#' @param verbose
-#' @param model_coefficient_tolerance
-#' @param maxiter_survreg
+#' @param mu_formula A formula for a survreg object from the survival package, left side of equation should be a surv object using "interval2" format, right side should be the non-linear term (polynomial or pspline) and any covariates. Only the mean of the component that is not fixed is modeled.
 #' @param initial_weighting For the reduced model fitting: 1 sets initial weights corresponding to fixed side (and extra_row) where observations not outside the range on the side corresponding to the fixed side are forced to be in the component where mu is being estimated. For initial weighting two a linear model is fit for the component still being estimated to provide initial observation weights.
-#' @param sd_initial
-#' @param stop_on_likelihood_drop
-#' @param non_linear_term
-#' @param covariates String, covariates to be included in mu model aside from the non-linear term.
 #'
 #' @importFrom readr parse_number
 #'
-#' @return
+#' @return A list with the same elements as the output of
+#'   \code{\link{EM_algorithm}} (likelihood, model, possible_data, pi_model,
+#'   mu_model, steps, converge, ncomp, prior_step_models, sd_initial,
+#'   mu_formula), where mu_model contains the model for the estimated component
+#'   only, plus fixed_side, extra_row, ecoff, and ECOFF (the ecoff on the log2
+#'   scale, or NA).
 #' @export
 #'
-#' @examples
 EM_algorithm_reduced = function(
     fixed_side = "RC",
     extra_row = FALSE,

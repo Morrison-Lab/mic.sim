@@ -1,37 +1,53 @@
-#' Title
+#' Fit a Full Mixture Model Using the EM Algorithm
 #'
+#' Fits a mixture of Gaussian components to interval-censored log2 MIC data
+#' using the EM algorithm, estimating a model for the mean (mu) of every
+#' component and a generalized additive model for the component weights (pi).
+#' This is the fitting routine that fit_EM() calls when approach = "full";
+#' most users should call fit_EM() instead.
 #'
 #' @inheritParams fit_EM
-#' @param visible_data
-#' @param model
+#' @param visible_data Data frame, data including the left and right bound of the MICs (use import_mics_with_metadata to format correctly) and any covariates (including the non-linear term)
+#' @param model String, "surv" (equivalently "pspline") or "polynomial" to fit the mu models with survreg(), or "mgcv" to fit them with mgcv::gam(). Must match the terms used in mu_formula.
 #' @param mu_formula A formula for a survreg object from the survival package, left side of equation should be a surv object using "interval2" format, right side should be the non-linear term (polynomial or pspline) and any covariates. Can be a single formula or a list of formulas where length is equal to the number of components where the trend in the mean is being estimated.
-#' @param pi_formula
-#' @param max_it
-#' @param ncomp
-#' @param tol_ll
-#' @param browse_at_end For internal model testing
-#' @param browse_each_step For internal model testing
-#' @param plot_visuals For internal model testing
-#' @param prior_step_plot For internal model testing
-#' @param pause_on_likelihood_drop For internal model testing
-#' @param pi_link
-#' @param verbose
-#' @param model_coefficient_tolerance
-#' @param maxiter_survreg
-#' @param initial_weighting Numeric, if 1: initial observation weights are estimated using linear regression at the highest and lowest tested concentrations. If 2, used a randomized start suitable for simulation studies on model validity but otherwise not recommended. If 3 or greater, fits a linear models to the components and estimates intial weights based on this model fit.
-#' @param sd_initial
-#' @param stop_on_likelihood_drop For internal model testing
-#' @param n_models Currently deprecated, will be used in future versions as part of model validation
-#' @param seed Currently deprecated, will be used in future versions as part of model validation
-#' @param randomize Currently deprecated, will be used in future versions as part of model validation
+#' @param browse_at_end For internal model testing (currently unused)
+#' @param browse_each_step For internal model testing, logical, if TRUE calls browser() at the end of each EM step
+#' @param plot_visuals For internal model testing, logical, if TRUE (together with browse_each_step) plots the fit at each step
+#' @param prior_step_plot For internal model testing, logical, if TRUE the step plots also show the fit from the previous step
+#' @param pause_on_likelihood_drop For internal model testing, logical, if TRUE calls browser() when the log likelihood decreases between steps
+#' @param initial_weighting Numeric, if 1: initial observation weights are estimated using linear regression at the highest and lowest tested concentrations. If 2, used a randomized start suitable for simulation studies on model validity but otherwise not recommended. If 3 or greater, fits a linear models to the components and estimates initial weights based on this model fit.
+#' @param stop_on_likelihood_drop For internal model testing, logical, if TRUE stops the algorithm (with converge = "likelihood decreased") when the log likelihood decreases between steps
+#' @param n_models Numeric, only used for the randomized start (initial_weighting = 2): the random perturbation of the initial component means has standard deviation sd_initial * (range of tested concentrations) / sqrt(n_models)
+#' @param seed Numeric or NULL, if not NULL the random seed is set to this value before fitting
+#' @param randomize String, only used for the randomized start (initial_weighting = 2): which starting values to randomize, one of "all", "mu", "sigma", or "pi"
 #'
-#' @return
+#' @return If ncomp = 1, a list with elements possible_data, mu_model, converge,
+#'   ncomp, and likelihood. Otherwise a list with elements
+#'   \describe{
+#'     \item{likelihood}{tibble of the log likelihood (and related checks) at each step}
+#'     \item{model}{the value of model used}
+#'     \item{possible_data}{the data with one row per observation and component,
+#'       including the posterior component probabilities \code{P(C=c|y,t)}}
+#'     \item{pi_model}{the fitted \code{gam} model for the component weights}
+#'     \item{mu_model}{list of the fitted models for the component means}
+#'     \item{steps}{number of EM steps run}
+#'     \item{converge}{"YES", "NO" (a model fit failed), "iterations" (max_it reached),
+#'       or "likelihood decreased"}
+#'     \item{ncomp}{number of components}
+#'     \item{prior_step_models}{the models and log likelihood from the previous step}
+#'     \item{seed, random_start_set, sd_initial, mu_formula}{settings used for the fit}
+#'   }
 #' @export
 #'
 #' @importFrom magrittr %<>%
 #' @importFrom survival survreg.control survreg Surv pspline coxph.wtest
 #'
 #' @examples
+#' \donttest{
+#' data = simulate_mics()
+#' fit = EM_algorithm(data, max_it = 300, verbose = 0)
+#' fit$converge
+#' }
 EM_algorithm = function(
     visible_data,
     model = "surv", #"mgcv", "polynomial"
