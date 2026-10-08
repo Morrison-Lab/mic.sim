@@ -7,10 +7,13 @@
 #'
 #' @import ggplot2
 #'
-#' @return
+#' @return A ggplot object showing the log likelihood at each step, with points
+#'   colored by whether the log likelihood increased or decreased from the
+#'   previous step.
 #' @export
 #'
 #' @examples
+#' \donttest{
 #' data = simulate_mics()
 #' output = fit_EM(model = "pspline",
 #' approach = "full",
@@ -29,6 +32,7 @@
 #' sd_initial = 0.2
 #' )
 #' plot_likelihood(likelihood_documentation = output$likelihood)
+#' }
 #'
 #'
 plot_likelihood = function(likelihood_documentation, format = "tibble"){

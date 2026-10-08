@@ -2,7 +2,7 @@
 % Please edit documentation in R/prep_sim_data_for_em.R
 \name{prep_sim_data_for_em}
 \alias{prep_sim_data_for_em}
-\title{Intermediate function to prepare simulated data for use in EM algorithm}
+\title{Prepare Simulated Data for the EM Algorithm}
 \usage{
 prep_sim_data_for_em(
   data.sim = simulate_mics(),
@@ -19,8 +19,39 @@ prep_sim_data_for_em(
 )
 }
 \arguments{
-\item{high_con_name}{}
+\item{data.sim}{Data frame of simulated data, usually the output of simulate_mics()}
+
+\item{left_bound_name}{String, name of the column in data.sim containing the left bound of each censoring interval}
+
+\item{right_bound_name}{String, name of the column in data.sim containing the right bound of each censoring interval}
+
+\item{time}{String, name of the column in data.sim containing the time variable}
+
+\item{covariate_names}{Character vector or NULL, names of covariate columns in data.sim to keep}
+
+\item{scale}{String or NULL, scale of the bounds in data.sim: "MIC" (bounds are converted to log2) or "log" (bounds are kept as is). If NULL, the "scale" attribute of data.sim is used.}
+
+\item{keep_truth}{Logical, if TRUE the true (uncensored) simulated value and true component of each observation are kept in columns observed_value and comp}
+
+\item{observed_value_name}{String, name of the column in data.sim containing the true simulated value, used if keep_truth is TRUE}
+
+\item{comp_name}{String, name of the column in data.sim containing the true component, used if keep_truth is TRUE}
+
+\item{low_con_name}{String, name of the column in data.sim containing the lowest tested concentration}
+
+\item{high_con_name}{String, name of the column in data.sim containing the highest tested concentration}
+}
+\value{
+A tibble with columns obs_id, the covariate_names columns, the time
+  column, left_bound and right_bound (on the log2 scale), low_con, and
+  high_con, plus observed_value and comp if keep_truth is TRUE.
 }
 \description{
-Intermediate function to prepare simulated data for use in EM algorithm
+Intermediate function to prepare simulated data for use in EM algorithm:
+selects the interval bounds, time, covariates, and tested concentration
+limits from the output of simulate_mics(), converts the bounds to the log2
+scale if needed, and adds an observation id.
+}
+\examples{
+prep_sim_data_for_em(simulate_mics(n = 50))
 }

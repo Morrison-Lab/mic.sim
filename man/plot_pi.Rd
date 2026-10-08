@@ -2,7 +2,7 @@
 % Please edit documentation in R/plot_pi.R
 \name{plot_pi}
 \alias{plot_pi}
-\title{Title}
+\title{Plot Fitted Component Weights}
 \usage{
 plot_pi(
   output,
@@ -18,9 +18,36 @@ plot_pi(
 )
 }
 \arguments{
-\item{x_axis_t_breaks}{}
+\item{output}{List, output of a fit_EM()}
+
+\item{df}{Data frame, output$possible_data with added columns cens ("lc",
+"rc", or "int") and mid (a plotting position for each observation), as
+created in plot_fm()}
+
+\item{start_date}{Integer, value at which x axis should start (year). Time t is plotted as the date start_date + t (in decimal years).}
+
+\item{add_log_reg}{Logical, add a curve to the pi (component weight) plot showing proportion resistant and susceptible}
+
+\item{ecoff}{Numeric or String, represents an ECOFF on the MIC Scale to define the upper limit of the WT component, A number is interpreted as WT being <= ECOFF.}
+
+\item{s_breakpoint}{String, represents S breakpoint (e.g. <= 2) on MIC scale (not log2 scale)}
+
+\item{r_breakpoint}{String, represents R breakpoint (e.g. >= 32) on MIC scale (not log2 scale)}
+
+\item{visual_split}{Numeric or String, represents a visual split point on the MIC scale to define the upper limit of the WT component. A number is interpreted as WT being <= visual_split}
+
+\item{skip}{Vector, vector of either "ecoff", "bkpts", or c("ecoff", "bkpts"), to describe any splits for which logistic regression should not be plotted if another logistic regression is being plotted. If only one divider is used, just turn off add_log_reg}
+
+\item{x_axis_t_breaks}{Numerical vector, vector of values on the scale of t, the time variable in years from the start of the study. Helpful to use seq(0,t_max, by = spacing) where t_max is the length of study period and spacing is how many years to separate major ticks by}
+}
+\value{
+A ggplot object.
 }
 \description{
-Title
+Builds the lower panel of plot_fm(): the fitted proportion of isolates in
+each component (pi) over time with 95\% confidence bands, optionally with
+logistic regression curves for isolates above and below an ECOFF,
+breakpoints, or visual split (see log_reg()). Called by plot_fm(); it is not
+usually called directly.
 }
 \keyword{internal}
