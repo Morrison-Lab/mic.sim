@@ -5,6 +5,8 @@
 #' @importFrom dplyr tibble
 #' @importFrom lubridate year
 #' @importFrom magrittr %>%
+#' @importFrom purrr safely
+#' @import mgcv
 #' @importFrom mgcv cnorm
 #' @importFrom mgcv gam
 #' @importFrom rlang :=
