@@ -59,11 +59,23 @@ test_that("add_scale normalizes scale names and rejects bad ones", {
 })
 
 test_that("invalid arguments raise errors instead of passing silently", {
-  expect_error(
-    fit_all_mu_models(tibble::tibble(), ncomp = 2, mu_formula = list(),
-                      approach = "nonsense", fixed_side = NULL,
-                      maxiter_survreg = 30)
+  expect_error(write_all_formulas("t", c(3, 3), NULL, model = "nonsense"),
+               "Please use 'surv' or 'polynomial'")
+  expect_error(draw_covariates(tibble::tibble(x = 1:3), c("ordinal")),
+               "Invalid type")
+})
+
+test_that("imported MIC-scale data gets a finite tested range", {
+  raw = tibble::tibble(
+    mic = c("<=0.25", "0.5", "1", "2", ">8", "4", "<=0.25"),
+    t = 1:7
   )
+  mic_import = import_mics_with_metadata(raw, "mic", "t", scale = "MIC")
+  log_import = import_mics_with_metadata(raw, "mic", "t", scale = "log")
+
+  expect_equal(unique(mic_import$low_con), 0.25)
+  expect_equal(set_scale_log(mic_import, NULL)$low_con, log_import$low_con)
+  expect_equal(set_scale_log(mic_import, NULL)$high_con, log_import$high_con)
 })
 
 test_that("maxiter_survreg reaches survreg", {
@@ -105,7 +117,7 @@ test_that("EM_algorithm gives the same fit for MIC-scale and log-scale input", {
                tolerance = 1e-6)
 })
 
-test_that("the default logit pi model is fitted, not rejected", {
+test_that("fit_mgcv_pi_model dispatches on pi_link and rejects unknown links", {
   possible_data = tibble::tibble(
     t = rep(seq(0, 10, length.out = 50), each = 2),
     c = rep(c("1", "2"), 50),

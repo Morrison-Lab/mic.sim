@@ -89,9 +89,7 @@ import_mics = function(mic_column, code_column = NULL, combination_agent = NULL,
 
   if(!include_mic_bounds){
     df = df %>%
-      select(-c(left_bound_mic,
-             right_bound_mic)
-             )
+      select(-any_of(c("left_bound_mic", "right_bound_mic")))
   }
 
 
