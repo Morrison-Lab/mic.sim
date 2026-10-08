@@ -36,7 +36,7 @@ plot_mean = function(output, df, results, start_date, fitted_comp, title, plot_m
     mean = mean_plot_add_splits(mean = mean, ecoff = ecoff, s_breakpoint = s_breakpoint, r_breakpoint = r_breakpoint, visual_split = visual_split)
     mean = readjust_scales_mean_plot(mean = mean, x_axis_t_breaks = x_axis_t_breaks, start_date = start_date)
   }else{
-    warningCondition("No components converged")
+    warning("No components converged", call. = FALSE)
     mean = df %>% ggplot() +
       geom_segment(aes(x = t, xend = t, y = left_bound, yend = right_bound), linewidth = 0.75, data = (df %>% filter(cens == "int")), alpha = 0.3) +
       geom_segment(aes(x = t, xend = t, y = right_bound, yend = left_bound), linewidth = 0.75, data = (df %>% filter(cens == "lc") %>% mutate(left_bound = plot_min)), arrow = arrow(length = unit(0.03, "npc")), alpha = 0.3) +

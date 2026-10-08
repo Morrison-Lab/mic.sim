@@ -68,11 +68,14 @@ EM_algorithm_reduced = function(
   if(model == "pspline"){
     model = "surv"
   }
+  if(model == "mgcv"){
+    warning("model = 'mgcv' is experimental: mgcv::cnorm() treats the EM weights as precision weights rather than case weights, so component standard deviations are not estimated correctly. Use model = 'surv' for analyses you intend to report.", call. = FALSE)
+  }
 
 
   #add attribute model to visible data
 
-  visible_data = modify_visible_data(visible_data, model)
+  visible_data = modify_visible_data(visible_data, model, scale)
 
   visible_data = set_scale_log(visible_data, scale)
 
@@ -81,7 +84,7 @@ EM_algorithm_reduced = function(
   converge = NA_character_
 
   if(ncomp == 1){
-    errorCondition("The reduced model is appropriate for more than 1 component")
+    stop("The reduced model is appropriate for more than 1 component", call. = FALSE)
   }else{
 
     #first E step-----
@@ -174,7 +177,7 @@ EM_algorithm_reduced = function(
 
 
 
-        if(check_ll < tol_ll & model_coefficient_checks_results)
+        if(abs(check_ll) < tol_ll & model_coefficient_checks_results)
         {
           if(verbose > 0){
             message("Stopped on combined LL and parameters")}
@@ -191,7 +194,7 @@ EM_algorithm_reduced = function(
 
     ####group 149 to 173
     if(i > 1){
-      if(i == max_it & !((check_ll < tol_ll) & model_coefficient_checks_results)){
+      if(i == max_it & !((abs(check_ll) < tol_ll) & model_coefficient_checks_results)){
         converge = "iterations"
       }
     }
@@ -240,7 +243,7 @@ ecoff_into_log = function(ecoff, visible_data){  if(!is.na(ecoff)){
     ECOFF = log2(ecoff) %>% round()
   }
   if((ECOFF > max(visible_data$left_bound)) | (ECOFF < min(visible_data$right_bound))){
-    errorCondition("ecoff is outside the range of the data, will not split anything")
+    warning("ecoff is outside the range of the data, will not split anything", call. = FALSE)
   }
 
 }else{

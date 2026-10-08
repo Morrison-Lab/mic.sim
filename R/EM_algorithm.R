@@ -65,10 +65,13 @@ EM_algorithm = function(
   if(model == "pspline"){
     model = "surv"
   }
+  if(model == "mgcv"){
+    warning("model = 'mgcv' is experimental: mgcv::cnorm() treats the EM weights as precision weights rather than case weights, so component standard deviations are not estimated correctly. Use model = 'surv' for analyses you intend to report.", call. = FALSE)
+  }
 
   #add attribute model to visible data
 
-  visible_data = modify_visible_data(visible_data, model)
+  visible_data = modify_visible_data(visible_data, model, scale)
 
   visible_data = set_scale_log(visible_data, scale)
 
@@ -184,7 +187,7 @@ EM_algorithm = function(
 
 
 
-        if(check_ll < tol_ll & model_coefficient_checks_results)
+        if(abs(check_ll) < tol_ll & model_coefficient_checks_results)
         {
           if(verbose > 0){
             message("Stopped on combined LL and parameters")}
@@ -201,7 +204,7 @@ EM_algorithm = function(
 
     ####group 149 to 173
     if(i > 1){
-      if(i == max_it & !(check_ll < tol_ll & model_coefficient_checks_results)){
+      if(i == max_it & !(abs(check_ll) < tol_ll & model_coefficient_checks_results)){
         converge = "iterations"
       }
     }
@@ -406,11 +409,10 @@ fit_mgcv_pi_model = function(pi_formula, pi_link, possible_data){
   if(pi_link == "logit"){
     pi_model = gam(pi_formula, family = binomial(link = "logit"), data = possible_data, weights = `P(C=c|y,t)`, method = "ML") %>% suppressWarnings()
   } else if(pi_link == "identity"){
-    pi_model = gam(pi_formula, family = binomial(link = "identity"), data = possible_data, weights = `P(C=c|y,t)`, method = "ML") %>% suppressWarnings()
-  }
-  if(pi_link == "logit_simple"){
+    pi_model = gam(pi_formula, family = binomial(link = stats::make.link("identity")), data = possible_data, weights = `P(C=c|y,t)`, method = "ML") %>% suppressWarnings()
+  } else if(pi_link == "logit_simple"){
     pi_model = glm(c == "2" ~ t, family = binomial(link = "logit"), data = possible_data, weights = `P(C=c|y,t)`) %>% suppressWarnings()
-    }else{ errorCondition("pick logit or identity link function")}
+    }else{ stop("pick logit, identity, or logit_simple link function", call. = FALSE)}
 
   return(pi_model)
 }
@@ -436,7 +438,7 @@ reformat_safe = function(model){
 
 model_coefficient_checks.mgcv = function(mu_models_new, pi_model_new, mu_models_old, pi_model_old, model_coefficient_tolerance, ncomp){
   #do the weird coefficients gam returns chaange (only one for s(t) for some reason)
-  pi_parametric_coef_check = max((pi_model_new %>% coefficients()) - (pi_model_old %>% coefficients())) < model_coefficient_tolerance
+  pi_parametric_coef_check = max(abs((pi_model_new %>% coefficients()) - (pi_model_old %>% coefficients()))) < model_coefficient_tolerance
 
   #these are the actual smoothing things for every observation I believe
   #pi_nonparametric_check = max(pi_model_new$smooth - pi_model_old$smooth) < model_coefficient_tolerance
@@ -460,7 +462,7 @@ model_coefficient_checks.mgcv = function(mu_models_new, pi_model_new, mu_models_
  #break into sub-functions
 model_coefficient_checks.surv = function(mu_models_new, pi_model_new, mu_models_old, pi_model_old, model_coefficient_tolerance, ncomp){
   #do the weird coefficients gam returns chaange (only one for s(t) for some reason)
-  pi_parametric_coef_check = max((pi_model_new %>% coefficients()) - (pi_model_old %>% coefficients())) < model_coefficient_tolerance
+  pi_parametric_coef_check = max(abs((pi_model_new %>% coefficients()) - (pi_model_old %>% coefficients()))) < model_coefficient_tolerance
 
   #check if the number of coefficients in the mu models changes
   mu_number_of_coef_check = purrr::map(1:ncomp, ~(length(na.omit(mu_models_new[[.x]]$coefficients)) == length(na.omit(mu_models_old[[.x]]$coefficients)))) %>%
@@ -499,7 +501,9 @@ model_coefficient_checks = function(mu_models_new, pi_model_new, mu_models_old, 
 }
 
 get_scale = function(mu_model){
-  if(attr(mu_model, "model") == "mgcv"){
+  # survreg stores sigma in $scale; for an mgcv cnorm fit, $scale is the
+  # dispersion and sigma is the family's theta
+  if(inherits(mu_model, "gam")){
     mu_model$family$getTheta(TRUE) %>% return()
   }else{
     mu_model$scale %>% return()
@@ -562,20 +566,23 @@ modify_visible_data = function(visible_data, model, scale = NULL){
 add_scale = function(data, scale){
   if(is.null(attr(data, "scale"))){
     if(is.null(scale)){
-      errorCondition("This data set does not have a scale attribute already attached, please use 'scale' argument to provide one: acceptable values are log, fold, log2, MIC")
-    }else{
-      scale_modified = case_when(
-        tolower(scale) %in% c("log", "fold", "log2") ~ "log",
-        tolower(scale) %in% c("mic", "concentration") ~ "MIC",
-        TRUE ~ "error"
-      )
-
-      if(scale_modified == "error"){errorCondition("Invalid value of scale, please use 'log', 'fold', 'log2', or 'MIC'")}
-
-      attr(data, "scale") = scale
+      stop("This data set does not have a scale attribute already attached, please use 'scale' argument to provide one: acceptable values are log, fold, log2, MIC", call. = FALSE)
     }
+    attr(data, "scale") = normalize_scale(scale)
+  }else{
+    attr(data, "scale") = normalize_scale(attr(data, "scale"))
   }
   return(data)
+}
+
+normalize_scale = function(scale){
+  scale_modified = case_when(
+    tolower(scale) %in% c("log", "fold", "log2") ~ "log",
+    tolower(scale) %in% c("mic", "concentration") ~ "MIC",
+    TRUE ~ "error"
+  )
+  if(scale_modified == "error"){stop("Invalid value of scale, please use 'log', 'fold', 'log2', or 'MIC'", call. = FALSE)}
+  return(scale_modified)
 }
 
 set_algorithm_seed = function(seed){
@@ -707,8 +714,11 @@ m_step_check_maximizing_mgcv = function(possible_data, mu_models, pi_model){
 set_scale_log = function(visible_data, scale){
   visible_data = add_scale(visible_data, scale)
   if(attr(visible_data, "scale") == "MIC"){
-    visible_data = visible_data %>% mutate(left_bound = log2(left_bound),
-                                           right_bound = log2(right_bound))
+    # the tested-range limits must be on the same scale as the bounds
+    visible_data = visible_data %>% mutate(
+      across(any_of(c("left_bound", "right_bound", "low_con", "high_con")), log2)
+    )
+    attr(visible_data, "scale") = "log"
   }
   return(visible_data)
 

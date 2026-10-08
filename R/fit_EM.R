@@ -138,7 +138,7 @@ fit_EM = function(model = "pspline", #"polynomial",
                                     covariates, model)
   } else{
     if(model == "surv" & any(pre_set_degrees == 1)){
-      errorCondition("degrees of freedom for pspline in surv package must be at least 2")
+      stop("degrees of freedom for pspline in surv package must be at least 2", call. = FALSE)
     }
     mu_formula = write_all_formulas(non_linear_term, pre_set_degrees, covariates, model)
     cv_results = NULL
@@ -199,7 +199,7 @@ fit_EM = function(model = "pspline", #"polynomial",
                                   scale = scale
     )
   }else{
-    errorCondition("Values for approach are 'full' and 'reduced', if using reduced model, supply a value for fixed_side (RC or LC) and consider extra_row")
+    stop("Values for approach are 'full' and 'reduced', if using reduced model, supply a value for fixed_side (RC or LC) and consider extra_row", call. = FALSE)
   }
 
   output$cv_results = cv_results

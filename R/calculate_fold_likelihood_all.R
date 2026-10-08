@@ -48,7 +48,7 @@ calculate_fold_likelihood_all = function(testing_set,
         calculate_fold_likelihood.single_comp(testing_set,
                                               trained_mu_model)
       } else{
-        errorCondition("If using reduced model, need to supply a value for fixed_side")
+        stop("If using reduced model, need to supply a value for fixed_side", call. = FALSE)
       }
     }
   }

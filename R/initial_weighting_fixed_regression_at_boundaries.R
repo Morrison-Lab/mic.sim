@@ -12,7 +12,7 @@
 initial_weighting_fixed_regression_at_boundaries = function(visible_data, ncomp, sd_parameter = 0.2){
 
   if(ncomp != 2){
-    errorCondition("This initial weighting scheme is appropriate for 2 component models")
+    stop("This initial weighting scheme is appropriate for 2 component models", call. = FALSE)
   }
 
   visible_data <- visible_data %>% mutate(cens = case_when(

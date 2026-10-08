@@ -15,7 +15,7 @@ random_start = function(visible_data, ncomp, sd_parameter = 0.2, n_models, rando
   high_con = visible_data$high_con %>% unique
 
   if(ncomp != 2){
-    errorCondition("This initial weighting scheme is appropriate for 2 component models")
+    stop("This initial weighting scheme is appropriate for 2 component models", call. = FALSE)
   }
 
   visible_data <- visible_data %>% mutate(cens = case_when(

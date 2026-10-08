@@ -56,6 +56,9 @@ get_fold_likelihood_all = function(model = "surv",
 
   mu_formula = write_all_formulas(non_linear_term, degrees, covariates, model)
 
+  # put the test fold on the same (log2) scale the trained model uses
+  visible_data = set_scale_log(visible_data, scale)
+
   ##add check for if fold column exists
   training_set = visible_data %>% filter(fold != test)
   testing_set = visible_data %>% filter(fold == test)
@@ -118,7 +121,7 @@ get_fold_likelihood_all = function(model = "surv",
                                          scale = scale
     )
   }else{
-    errorCondition("Use 'full' or 'reduced' for approach")
+    stop("Use 'full' or 'reduced' for approach", call. = FALSE)
   }
 
   calculate_fold_likelihood_all(testing_set, trained_mu_model = trained_model$mu_model, trained_pi_model = trained_model$pi_model, approach = approach, fixed_side = fixed_side, extra_row = extra_row, ecoff = ecoff, ncomp = ncomp, converge = trained_model$converge, max_out_break = max_out_break) %>%

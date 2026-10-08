@@ -25,7 +25,7 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
     possible_data %>%
       mutate(
         `E[Y|t,c]` = if_else(c == 1, predict(mu_models[[1]], newdata = possible_data), NA_real_),
-        `sd[Y|t,c]` = if_else(c == 1, mu_models[[1]]$scale, NA_real_),
+        `sd[Y|t,c]` = if_else(c == 1, get_scale(mu_models[[1]]), NA_real_),
         `P(Y|t,c)` = case_when(
           c == 1 & left_bound == right_bound ~ dnorm(x = left_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`),
           c == 1 & left_bound <= `E[Y|t,c]` ~ pnorm(right_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`) -
@@ -39,7 +39,7 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
     possible_data %>%
       mutate(
         `E[Y|t,c]` = if_else(c == 2, predict(mu_models[[1]], newdata = possible_data), NA_real_),
-        `sd[Y|t,c]` = if_else(c == 2, mu_models[[1]]$scale, NA_real_),
+        `sd[Y|t,c]` = if_else(c == 2, get_scale(mu_models[[1]]), NA_real_),
         `P(Y|t,c)` = case_when(
           c == 2 & left_bound == right_bound ~ dnorm(x = left_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`),
           c == 2 & left_bound <= `E[Y|t,c]` ~ pnorm(right_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`) -
@@ -53,7 +53,7 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
     possible_data %>%
       mutate(
         `E[Y|t,c]` = if_else(c == 1, predict(mu_models[[1]], newdata = possible_data), NA_real_),
-        `sd[Y|t,c]` = if_else(c == 1, mu_models[[1]]$scale, NA_real_),
+        `sd[Y|t,c]` = if_else(c == 1, get_scale(mu_models[[1]]), NA_real_),
         `P(Y|t,c)` = case_when(
           c == 1 & left_bound == right_bound ~ dnorm(x = left_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`),
           c == 1 & left_bound <= `E[Y|t,c]` ~ pnorm(right_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`) -
@@ -67,7 +67,7 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
     possible_data %>%
       mutate(
         `E[Y|t,c]` = if_else(c == 2, predict(mu_models[[1]], newdata = possible_data), NA_real_),
-        `sd[Y|t,c]` = if_else(c == 2, mu_models[[1]]$scale, NA_real_),
+        `sd[Y|t,c]` = if_else(c == 2, get_scale(mu_models[[1]]), NA_real_),
         `P(Y|t,c)` = case_when(
           c == 2 & left_bound == right_bound ~ dnorm(x = left_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`),
           c == 2 & left_bound <= `E[Y|t,c]` ~ pnorm(right_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`) -
@@ -78,14 +78,14 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
         )
       )
   }else{
-    errorCondition("Invalid value for either fixed_side or extra_row")
+    stop("Invalid value for either fixed_side or extra_row", call. = FALSE)
   }
   }else{
     if(fixed_side == "RC"){
       possible_data %>%
         mutate(
           `E[Y|t,c]` = if_else(c == 1, predict(mu_models[[1]], newdata = possible_data), NA_real_),
-          `sd[Y|t,c]` = if_else(c == 1, mu_models[[1]]$scale, NA_real_),
+          `sd[Y|t,c]` = if_else(c == 1, get_scale(mu_models[[1]]), NA_real_),
           `P(Y|t,c)` = case_when(
             c == 1 & left_bound == right_bound ~ dnorm(x = left_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`),
             c == 1 & left_bound <= `E[Y|t,c]` ~ pnorm(right_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`) -
@@ -99,7 +99,7 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
       possible_data %>%
         mutate(
           `E[Y|t,c]` = if_else(c == 2, predict(mu_models[[1]], newdata = possible_data), NA_real_),
-          `sd[Y|t,c]` = if_else(c == 2, mu_models[[1]]$scale, NA_real_),
+          `sd[Y|t,c]` = if_else(c == 2, get_scale(mu_models[[1]]), NA_real_),
           `P(Y|t,c)` = case_when(
             c == 2 & left_bound == right_bound ~ dnorm(x = left_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`),
             c == 2 & left_bound <= `E[Y|t,c]` ~ pnorm(right_bound, mean = `E[Y|t,c]`, sd =  `sd[Y|t,c]`) -
@@ -110,7 +110,7 @@ calculate_density_obs_reduced = function(possible_data, mu_models, fixed_side, e
           )
         )
     }else{
-      errorCondition("Invalid value for either fixed_side or extra_row")
+      stop("Invalid value for either fixed_side or extra_row", call. = FALSE)
     }
   }
 

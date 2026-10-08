@@ -26,7 +26,7 @@ fit_mu_model = function(possible_data, pred_comp, mu_formula, maxiter_survreg = 
 fit_mu_model_safe = purrr::safely(fit_mu_model, otherwise = "Error")
 
 fit_mu_model_safe_formatted = function(possible_data, pred_comp, mu_formula, maxiter_survreg = 30){
-  mu = fit_mu_model_safe(possible_data, pred_comp, mu_formula, maxiter_survreg = 30)
+  mu = fit_mu_model_safe(possible_data, pred_comp, mu_formula, maxiter_survreg = maxiter_survreg)
   mu_model = reformat_safe(mu)
   return(mu_model)
 }
