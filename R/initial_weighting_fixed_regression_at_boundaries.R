@@ -1,4 +1,4 @@
-#' Intial Weighting Scheme: Fixed Regression at Boundaries
+#' Initial Weighting Scheme: Fixed Regression at Boundaries
 #'
 #' Fits regression lines with slope = 0 at high_con and low_con with sigma values of 0.2 times the difference between high_con and low_con, and calculates initial weights from this
 #'
