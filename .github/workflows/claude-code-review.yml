@@ -187,7 +187,7 @@ jobs:
           fi
           REF_ARGS=()
           if [ -n "$REF_ARG" ]; then
-            REF_ARGS=($REF_ARG)
+            read -r -a REF_ARGS <<< "$REF_ARG"
           elif [ "$PR_HEAD_REPO" != "$REPO" ]; then
             echo "::notice::PR #$PR_NUMBER is from a fork ($PR_HEAD_REPO); dispatching $WF_FILE from the default branch."
             REF_ARGS=("${DEFAULT_REF_ARGS[@]}")
