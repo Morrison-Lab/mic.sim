@@ -20,3 +20,10 @@ jobs:
     permissions:
       contents: read
     uses: Morrison-Lab/gha/.github/workflows/check-r-package.yml@v3
+    with:
+      # Off for now: 87 files in R/ define more than one function, and Air
+      # would reformat nearly every file. Both are whole-package restructures
+      # that would conflict with every open branch, so they are the
+      # maintainer's call rather than a CI default.
+      check-one-function-per-file: false
+      check-formatting: false
