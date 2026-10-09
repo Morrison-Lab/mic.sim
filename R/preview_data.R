@@ -10,7 +10,7 @@
 #' @param ECOFF_scale defaults to "MIC", meaning the ECOFF provided will be in concentration directly, if you have already taken log2(ECOFF) then change this to "log"
 #' @param covariate string, name of a column in data
 #' @param covariate_title what to name the legend for the covariate
-#' @param expand.grid.axis.lines logical, if TRUE increases linewidth of axes and gridlines to 0.75
+#' @inheritParams plot_fm
 #'
 #' @importFrom ggnewscale new_scale_color
 #'

@@ -4,7 +4,7 @@
 #'
 #' @param mu_models list of survreg objects fitted to each component by the EM algorithm
 #' @param ncomp number of components being fitted by the EM algorithm
-#' @param maxiter_survreg maximum number of iterations for survreg to fit the model
+#' @inheritParams fit_mu_model
 #'
 #' @return
 #' @keywords internal

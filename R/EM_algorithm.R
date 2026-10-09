@@ -7,7 +7,6 @@
 #' most users should call fit_EM() instead.
 #'
 #' @inheritParams fit_EM
-#' @param visible_data Data frame, data including the left and right bound of the MICs (use import_mics_with_metadata to format correctly) and any covariates (including the non-linear term)
 #' @param model String, "surv" (equivalently "pspline") or "polynomial" to fit the mu models with survreg(), or "mgcv" to fit them with mgcv::gam(). Must match the terms used in mu_formula.
 #' @param mu_formula A formula for a survreg object from the survival package, left side of equation should be a surv object using "interval2" format, right side should be the non-linear term (polynomial or pspline) and any covariates. Can be a single formula or a list of formulas where length is equal to the number of components where the trend in the mean is being estimated.
 #' @param browse_at_end For internal model testing (currently unused)
