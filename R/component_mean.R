@@ -3,7 +3,7 @@
 #' @param n
 #' @param t_dist
 #' @param pi
-#' @param `E[X|T,C]`
+#' @param mean_function
 #'
 #' @return
 #' @keywords internal
@@ -21,7 +21,7 @@ component_mean = function(
       z <- 0.5 + 0.2 * t
       tibble("1" = z, "2" = 1- z)
     },
-    `E[X|T,C]` = function(t, c)
+    mean_function = function(t, c)
     {
       case_when(
         c == "1" ~ 3 + t + 2*t^2 - sqrt(t),
@@ -36,7 +36,7 @@ component_mean = function(
       t = t_dist(n = n),
       p = map(t, ~ pi_grab(.x, pi)),
       comp = gen_comp(p),
-      x = `E[X|T,C]`(t, comp)
+      x = mean_function(t, comp)
     )
 
 }
