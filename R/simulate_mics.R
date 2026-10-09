@@ -6,14 +6,14 @@
 #' components on the log2 MIC scale whose weights and means can change over time,
 #' and is then interval-censored at the tested concentrations.
 #'
-#' The argument \code{`E[X|T,C]`} is a function of time t and component c
-#' (the strings "1", "2", ...) that returns the mean (mu) of component c at time
-#' t on the log2 MIC scale. It is documented here rather than in the argument
-#' list because Rd cannot list an argument name that contains a comma.
-#'
 #' @param n Number of observations
 #' @param t_dist A function of n for drawing values of t
 #' @param pi A function of time that returns a vector of weights that sum to 1.
+#' @param mean_function A function of time t and component c (the strings
+#'   "1", "2", ...) that returns the mean (mu) of component c at time t on the
+#'   log2 MIC scale. This argument used to be called \code{`E[X|T,C]`}; that
+#'   name still works when passed by name, with a deprecation warning.
+#' @param ... Only for the deprecated argument name \code{`E[X|T,C]`}.
 #' @param sd_vector A vector with length equal to the number of components, with the elements named "1", "2",...
 #' @param covariate_list List of covariates, each one has its own format, see examples of numeric and categorical covariates. A numeric covariate is c("numeric", "normal", mean, sd) or c("numeric", "uniform", min, max); a categorical covariate is c("categorical", p_a, p_b, ...) giving the probabilities of levels "a", "b", .... The covariates are named covariate_1, covariate_2, ... in the order given. NULL for no covariates.
 #' @param covariate_effect_vector Vector of covariate effects corresponding to the covariates listed above: an intercept followed by one coefficient per numeric covariate and one per non-reference level of each categorical covariate (the columns of the model matrix of the covariates). Ignored if covariate_list is NULL.
@@ -63,7 +63,7 @@
 #'   z <- 0.17 + 0.025 * t - 0.00045 * t ^ 2
 #'   tibble::tibble("1" = 1 - z, "2" = z)
 #' },
-#' `E[X|T,C]` = function(t, c)
+#' mean_function = function(t, c)
 #' {
 #'   dplyr::case_when(c == "1" ~ -4.0 + (0.24 * t) - (0.0055 * t ^ 2),
 #'             c == "2" ~ 3 + 0.001 * t,
@@ -82,7 +82,7 @@ simulate_mics <- function(n = 300,
                             z <- 0.17 + 0.025 * t - 0.00045 * t ^ 2
                             tibble("1" = 1 - z, "2" = z)
                           },
-                          `E[X|T,C]` = function(t, c)
+                          mean_function = function(t, c)
                           {
                             case_when(c == "1" ~ -4.0 + (0.24 * t) - (0.0055 * t ^ 2),
                                       c == "2" ~ 3 + 0.001 * t,
@@ -94,7 +94,9 @@ simulate_mics <- function(n = 300,
                           conc_limits_table = NULL,
                           low_con = -3,
                           high_con = 6,
-                          scale = "log"){
+                          scale = "log",
+                          ...){
+                          mean_function = resolve_mean_function(mean_function, missing(mean_function), list(...))
                           # covariate_list = list(c("numeric", "normal", 0, 1), c("categorical", c(0.3, 0.4, 0.3))),
                           # covariate_effect_vector = c(0, #intercept for all covariates combined
                           #                             0.2, #slope for covariate_1
@@ -104,7 +106,7 @@ simulate_mics <- function(n = 300,
                           #                                     c("c", -4, 4)),`.name_repair` = "unique"
                           # ) %>% rename("covariate_2" = 1, "low_cons" = 2, "high_cons" = 3),) {
                           if (is.null(covariate_list)) {
-                            base_data <- draw_epsilon(n, t_dist, pi, `E[X|T,C]`, sd_vector)
+                            base_data <- draw_epsilon(n, t_dist, pi, mean_function, sd_vector)
                             simulated_obs <-
                               base_data %>% mutate(observed_value = epsilon + x)
                             simulated_obs <-
@@ -133,7 +135,7 @@ simulate_mics <- function(n = 300,
                             attr(df, "scale") <- scale
                             return(df)
                           } else{
-                            base_data <- draw_epsilon(n, t_dist, pi, `E[X|T,C]`, sd_vector)
+                            base_data <- draw_epsilon(n, t_dist, pi, mean_function, sd_vector)
                             covariate_data <-
                               add_covariate(covariate_list = covariate_list, input = base_data$t)
                             merged_data <- tibble(base_data, covariate_data)
