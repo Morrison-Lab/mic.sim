@@ -5,8 +5,8 @@
 #' fit_EM(). Errors from fit_EM() are captured rather than raised, so that
 #' batches of simulations can be run with, e.g., purrr::map().
 #'
-#' The simulated component means are set by the argument \code{`E[X|T,C]`}; see
-#' \code{\link{simulate_mics}}.
+#' The simulated component means are set by the argument \code{mean_function};
+#' see \code{\link{simulate_mics}}.
 #'
 #' @inheritParams simulate_mics
 #' @inheritParams fit_EM
@@ -33,7 +33,7 @@ simulation_run = function(i = 100,
                             tibble(`1` = 1 - z,
                                    `2` = z)
                           },
-                          `E[X|T,C]` = function(t, c) {
+                          mean_function = function(t, c) {
                             case_when(c == "1" ~ -4 + (0.24 * t) - (0.0055 *t^2), c == "2" ~ 3 + 0.001 * t, TRUE ~ NaN)
                           },
                           sd_vector = c(`1` = 1, `2` = 1.05),
@@ -65,15 +65,17 @@ simulation_run = function(i = 100,
                           initial_weighting = 3,
                           sd_initial = 0.2,
                           reruns_allowed = 3,
-                          max_out_break = FALSE
+                          max_out_break = FALSE,
+                          ...
                           ){
+  mean_function = resolve_mean_function(mean_function, missing(mean_function), list(...))
   set.seed(i)
   simulated_data =
     simulate_mics(
       n = n,
       t_dist = t_dist,
       pi = pi,
-      `E[X|T,C]` = `E[X|T,C]`,
+      mean_function = mean_function,
       sd_vector = sd_vector,
       covariate_list = covariate_list,
       covariate_effect_vector = covariate_effect_vector,

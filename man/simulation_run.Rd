@@ -15,7 +15,7 @@ simulation_run(
      tibble(`1` = 1 - z,
     `2` = z)
  },
-  `E[X|T,C]` = function(t, c) {
+  mean_function = function(t, c) {
      case_when(c == "1" ~ -4 + (0.24 * t) - (0.0055 *
     t^2), c == "2" ~ 3 + 0.001 * t, TRUE ~ NaN)
  },
@@ -48,7 +48,8 @@ simulation_run(
   initial_weighting = 3,
   sd_initial = 0.2,
   reruns_allowed = 3,
-  max_out_break = FALSE
+  max_out_break = FALSE,
+  ...
 )
 }
 \arguments{
@@ -59,6 +60,11 @@ simulation_run(
 \item{t_dist}{A function of n for drawing values of t}
 
 \item{pi}{A function of time that returns a vector of weights that sum to 1.}
+
+\item{mean_function}{A function of time t and component c (the strings
+"1", "2", ...) that returns the mean (mu) of component c at time t on the
+log2 MIC scale. This argument used to be called \code{`E[X|T,C]`}; that
+name still works when passed by name, with a deprecation warning.}
 
 \item{sd_vector}{A vector with length equal to the number of components, with the elements named "1", "2",...}
 
@@ -119,6 +125,8 @@ simulation_run(
 \item{reruns_allowed}{Numeric, if the cross-validation for a particular combination of degrees (polynomial) or degrees of freedom (pspline) fails, how many repeat attempts should be allowed?}
 
 \item{max_out_break}{Logical, if TRUE when a CV fold reaches maximum iterations it breaks the loop and moves to next rerun if applicable}
+
+\item{...}{Only for the deprecated argument name \code{`E[X|T,C]`}.}
 }
 \value{
 A list with elements result (the output of fit_EM(), or NULL if it
@@ -132,8 +140,8 @@ fit_EM(). Errors from fit_EM() are captured rather than raised, so that
 batches of simulations can be run with, e.g., purrr::map().
 }
 \details{
-The simulated component means are set by the argument \code{`E[X|T,C]`}; see
-\code{\link{simulate_mics}}.
+The simulated component means are set by the argument \code{mean_function};
+see \code{\link{simulate_mics}}.
 }
 \examples{
 \donttest{

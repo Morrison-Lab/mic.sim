@@ -14,7 +14,7 @@ simulate_mics(
      tibble(`1` = 1 - z,
     `2` = z)
  },
-  `E[X|T,C]` = function(t, c) {
+  mean_function = function(t, c) {
      case_when(c == "1" ~ -4 + (0.24 * t) - (0.0055 *
     t^2), c == "2" ~ 3 + 0.001 * t, TRUE ~ NaN)
  },
@@ -24,7 +24,8 @@ simulate_mics(
   conc_limits_table = NULL,
   low_con = -3,
   high_con = 6,
-  scale = "log"
+  scale = "log",
+  ...
 )
 }
 \arguments{
@@ -33,6 +34,11 @@ simulate_mics(
 \item{t_dist}{A function of n for drawing values of t}
 
 \item{pi}{A function of time that returns a vector of weights that sum to 1.}
+
+\item{mean_function}{A function of time t and component c (the strings
+"1", "2", ...) that returns the mean (mu) of component c at time t on the
+log2 MIC scale. This argument used to be called \code{`E[X|T,C]`}; that
+name still works when passed by name, with a deprecation warning.}
 
 \item{sd_vector}{A vector with length equal to the number of components, with the elements named "1", "2",...}
 
@@ -47,6 +53,8 @@ simulate_mics(
 \item{high_con}{If concentration limits are constant for all observations, used to set the highest tested concentration on the log2(MIC) scale}
 
 \item{scale}{What scale ("log" or "MIC") the data returned by simulate_mics is. Default is "log" which corresponds to log2(MIC)}
+
+\item{...}{Only for the deprecated argument name \code{`E[X|T,C]`}.}
 }
 \value{
 A tibble with one row per observation and columns including t
@@ -63,12 +71,6 @@ pi and its trends, trends in the mean, component draws, epsilon, covariates,
 and censors the data. Each observation is drawn from a mixture of Gaussian
 components on the log2 MIC scale whose weights and means can change over time,
 and is then interval-censored at the tested concentrations.
-}
-\details{
-The argument \code{`E[X|T,C]`} is a function of time t and component c
-(the strings "1", "2", ...) that returns the mean (mu) of component c at time
-t on the log2 MIC scale. It is documented here rather than in the argument
-list because Rd cannot list an argument name that contains a comma.
 }
 \examples{
 #Covariate List
@@ -96,7 +98,7 @@ pi = function(t) {
   z <- 0.17 + 0.025 * t - 0.00045 * t ^ 2
   tibble::tibble("1" = 1 - z, "2" = z)
 },
-`E[X|T,C]` = function(t, c)
+mean_function = function(t, c)
 {
   dplyr::case_when(c == "1" ~ -4.0 + (0.24 * t) - (0.0055 * t ^ 2),
             c == "2" ~ 3 + 0.001 * t,
