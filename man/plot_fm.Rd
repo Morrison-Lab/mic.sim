@@ -42,7 +42,7 @@ plot_fm(
 
 \item{plot_range}{Vector of length 2, minimum and maximum values of y axis of plot}
 
-\item{start_date}{Integer, value at which x axis should start (year).}
+\item{start_date}{Integer, value at which x axis should start (year). Time t is plotted as the date start_date + t (in decimal years).}
 
 \item{x_axis_t_breaks}{Numerical vector, vector of values on the scale of t, the time variable in years from the start of the study. Helpful to use seq(0,t_max, by = spacing) where t_max is the length of study period and spacing is how many years to separate major ticks by}
 
@@ -50,11 +50,18 @@ plot_fm(
 
 \item{expand.grid.axis.lines}{logical, if TRUE increases linewidth of axes and gridlines to 0.75}
 }
+\value{
+A patchwork object (see \code{\link[patchwork]{wrap_plots}}) stacking
+  the plot of the data and fitted component means (from \code{\link{plot_mean}})
+  above the plot of the fitted component weights (from \code{\link{plot_pi}}).
+  For a one-component model only the mean plot is included.
+}
 \description{
 Takes output of a fit_EM() run and plots it.
 Logistic regression fitting is in progress (currently does not accept covariates and non-linear term must be "t")
 }
 \examples{
+\donttest{
 data = simulate_mics()
 output = fit_EM(model = "pspline",
 approach = "full",
@@ -72,7 +79,9 @@ model_coefficient_tolerance = 0.00001,
 initial_weighting = 3,
 sd_initial = 0.2
 )
-plot_fm(output = output, title = "Example", add_log_reg = TRUE, s_breakpoint = "<=1", r_breakpoint = ">=4")
+plot_fm(output = output, title = "Example", add_log_reg = TRUE,
+        s_breakpoint = "<=1", r_breakpoint = ">=4")
+}
 
 
 }

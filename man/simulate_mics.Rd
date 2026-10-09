@@ -2,7 +2,7 @@
 % Please edit documentation in R/simulate_mics.R
 \name{simulate_mics}
 \alias{simulate_mics}
-\title{simulate_mics}
+\title{Simulate Interval-Censored MIC Data}
 \usage{
 simulate_mics(
   n = 300,
@@ -14,7 +14,7 @@ simulate_mics(
      tibble(`1` = 1 - z,
     `2` = z)
  },
-  `E[X|T,C]` = function(t, c) {
+  mean_function = function(t, c) {
      case_when(c == "1" ~ -4 + (0.24 * t) - (0.0055 *
     t^2), c == "2" ~ 3 + 0.001 * t, TRUE ~ NaN)
  },
@@ -24,7 +24,8 @@ simulate_mics(
   conc_limits_table = NULL,
   low_con = -3,
   high_con = 6,
-  scale = "log"
+  scale = "log",
+  ...
 )
 }
 \arguments{
@@ -34,13 +35,18 @@ simulate_mics(
 
 \item{pi}{A function of time that returns a vector of weights that sum to 1.}
 
+\item{mean_function}{A function of time t and component c (the strings
+"1", "2", ...) that returns the mean (mu) of component c at time t on the
+log2 MIC scale. This argument used to be called \code{`E[X|T,C]`}; that
+name still works when passed by name, with a deprecation warning.}
+
 \item{sd_vector}{A vector with length equal to the number of components, with the elements named "1", "2",...}
 
-\item{covariate_list}{List of covariates, each one has its own format, see examples of numeric and categorical covariates}
+\item{covariate_list}{List of covariates, each one has its own format, see examples of numeric and categorical covariates. A numeric covariate is c("numeric", "normal", mean, sd) or c("numeric", "uniform", min, max); a categorical covariate is c("categorical", p_a, p_b, ...) giving the probabilities of levels "a", "b", .... The covariates are named covariate_1, covariate_2, ... in the order given. NULL for no covariates.}
 
-\item{covariate_effect_vector}{Vector of covariate effects corresponding to the covariates listed above}
+\item{covariate_effect_vector}{Vector of covariate effects corresponding to the covariates listed above: an intercept followed by one coefficient per numeric covariate and one per non-reference level of each categorical covariate (the columns of the model matrix of the covariates). Ignored if covariate_list is NULL.}
 
-\item{conc_limits_table}{If concentration limits vary by some covariate use this table to specify limits for each value of the covariate. Is right-joined to data by the covariate values}
+\item{conc_limits_table}{If concentration limits vary by some covariate use this table to specify limits for each value of the covariate. Is joined to data by the covariate values. The limit columns must be named low_cons and high_cons (log2 scale).}
 
 \item{low_con}{If concentration limits are constant for all observations, used to set the lowest tested concentration on the log2(MIC) scale}
 
@@ -48,38 +54,53 @@ simulate_mics(
 
 \item{scale}{What scale ("log" or "MIC") the data returned by simulate_mics is. Default is "log" which corresponds to log2(MIC)}
 
-\item{`E[X|T, C]`}{A function of time and component that returns a value of mu (component mean) for any given time and component}
+\item{...}{Only for the deprecated argument name \code{`E[X|T,C]`}.}
+}
+\value{
+A tibble with one row per observation and columns including t
+  (time), comp (true component), x (component mean), sd, epsilon,
+  observed_value (true, uncensored value on the log2 scale), any simulated
+  covariates, left_bound and right_bound (the censoring interval, on the
+  scale given by scale), indicator (censoring type), and low_con and high_con
+  (lowest and highest tested concentrations). The "scale" attribute records
+  the scale of the bounds.
 }
 \description{
-function that wraps together all the functions that determine t's distribution,
+Function that wraps together all the functions that determine t's distribution,
 pi and its trends, trends in the mean, component draws, epsilon, covariates,
-and censors the data
+and censors the data. Each observation is drawn from a mixture of Gaussian
+components on the log2 MIC scale whose weights and means can change over time,
+and is then interval-censored at the tested concentrations.
 }
 \examples{
 #Covariate List
-covariate_list = list(c("numeric", "normal", 0, 1), c("categorical", c(0.3, 0.4)), c("numeric", "uniform", 0, 5))
+covariate_list = list(
+  c("numeric", "normal", 0, 1),
+  c("categorical", c(0.3, 0.4)),
+  c("numeric", "uniform", 0, 5)
+)
 #Covariate Effect Vector
 covariate_effect_vector = c(2, #intercept for all covariates combined
-                                                                10, #slope for covariate_1
-                                                                100, #effect of level b vs a of covariate 2
-                                                                3 #slope for covariate_3
-                                                                )
+                            10, #slope for covariate_1
+                            100, #effect of level b vs a of covariate 2
+                            3 #slope for covariate_3
+                            )
 #Concentration Limits Table
-conc_limits_table = as_tibble(rbind(c("a", -3, 3),
+conc_limits_table = tibble::as_tibble(rbind(c("a", -3, 3),
                                     c("b", -4, 4),
                                     c("c", -4, 4)),`.name_repair` = "unique"
-) \%>\% rename("covariate_2" = 1, "low_cons" = 2, "high_cons" = 3))
+) |> dplyr::rename("covariate_2" = 1, "low_cons" = 2, "high_cons" = 3)
 
 simulate_mics(
 n = 300,
 t_dist = function(n){runif(n, min = 0, max = 16)},
 pi = function(t) {
   z <- 0.17 + 0.025 * t - 0.00045 * t ^ 2
-  tibble("1" = 1 - z, "2" = z)
+  tibble::tibble("1" = 1 - z, "2" = z)
 },
-`E[X|T,C]` = function(t, c)
+mean_function = function(t, c)
 {
-  case_when(c == "1" ~ -4.0 + (0.24 * t) - (0.0055 * t ^ 2),
+  dplyr::case_when(c == "1" ~ -4.0 + (0.24 * t) - (0.0055 * t ^ 2),
             c == "2" ~ 3 + 0.001 * t,
             TRUE ~ NaN)
 },

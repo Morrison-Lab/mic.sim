@@ -1,23 +1,32 @@
-#' Intermediate function to prepare simulated data for use in EM algorithm
+#' Prepare Simulated Data for the EM Algorithm
 #'
-#' @param data.sim
-#' @param left_bound_name
-#' @param right_bound_name
-#' @param time
-#' @param covariate_names
-#' @param scale
-#' @param keep_truth
-#' @param observed_vale_name
-#' @param low_con_name
-#' @param high_con_name
+#' Intermediate function to prepare simulated data for use in EM algorithm:
+#' selects the interval bounds, time, covariates, and tested concentration
+#' limits from the output of simulate_mics(), converts the bounds to the log2
+#' scale if needed, and adds an observation id.
 #'
-#' @return
+#' @param data.sim Data frame of simulated data, usually the output of simulate_mics()
+#' @param left_bound_name String, name of the column in data.sim containing the left bound of each censoring interval
+#' @param right_bound_name String, name of the column in data.sim containing the right bound of each censoring interval
+#' @param time String, name of the column in data.sim containing the time variable
+#' @param covariate_names Character vector or NULL, names of covariate columns in data.sim to keep
+#' @param scale String or NULL, scale of the bounds in data.sim: "MIC" (bounds are converted to log2) or "log" (bounds are kept as is). If NULL, the "scale" attribute of data.sim is used.
+#' @param keep_truth Logical, if TRUE the true (uncensored) simulated value and true component of each observation are kept in columns observed_value and comp
+#' @param observed_value_name String, name of the column in data.sim containing the true simulated value, used if keep_truth is TRUE
+#' @param comp_name String, name of the column in data.sim containing the true component, used if keep_truth is TRUE
+#' @param low_con_name String, name of the column in data.sim containing the lowest tested concentration
+#' @param high_con_name String, name of the column in data.sim containing the highest tested concentration
+#'
+#' @return A tibble with columns obs_id, the covariate_names columns, the time
+#'   column, left_bound and right_bound (on the log2 scale), low_con, and
+#'   high_con, plus observed_value and comp if keep_truth is TRUE.
 #' @export
 #'
 #' @importFrom magrittr %>%
 #' @importFrom dplyr select all_of mutate n relocate
 #'
 #' @examples
+#' prep_sim_data_for_em(simulate_mics(n = 50))
 prep_sim_data_for_em <- function(
     data.sim = simulate_mics(),
     left_bound_name = "left_bound",

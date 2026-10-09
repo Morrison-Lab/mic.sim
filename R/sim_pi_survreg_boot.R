@@ -77,3 +77,9 @@ adjust_model_matrix_to_df_mgcv = function(modmat, df){
                                      c = as.character(1:(nrow(df)/nrow(modmat)))
   ) %>% select(-c) %>% as.matrix()
 }
+
+# Draws from the standard smallest extreme value distribution, the error
+# distribution of a Weibull survreg model on the log scale.
+rsev = function(n){
+  log(stats::rexp(n))
+}

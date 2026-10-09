@@ -6,7 +6,7 @@
 \alias{mic.sim-package}
 \title{mic.sim: Simulating and Fitting Models to MIC Data}
 \description{
-mic.sim includes functions for analyzing minimum inhibitory concentration data, including functions for importing or simulating data, viewing the distribution, model fitting, and model visualization. The model fitting uses a latent Gaussian mixture model framework to analyze trends in the mixture weights and component means on the log2 MIC scale to attempt to distinguish and model the wild type and non-wild type subpopulations.
+Analyze minimum inhibitory concentration (MIC) data: import or simulate data, view the distribution, fit models, and visualize the fits. Models are latent Gaussian mixtures for interval-censored log2 MIC values, in which the mixture weights and component means vary smoothly over time, to distinguish and track the wild-type and non-wild-type subpopulations.
 }
 \seealso{
 Useful links:
@@ -15,6 +15,10 @@ Useful links:
   \item \url{https://ajmichaelucd.github.io/mic.sim/}
   \item Report bugs at \url{https://github.com/ajmichaelucd/mic.sim/issues}
 }
+
+}
+\author{
+\strong{Maintainer}: Alec Michael \email{alec.j.michael@gmail.com} [copyright holder]
 
 }
 \keyword{internal}

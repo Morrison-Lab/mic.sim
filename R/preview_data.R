@@ -1,4 +1,4 @@
-#' Plot Data
+#' Plot MIC Data
 #'
 #' Produces a basic plot of data generated from simulate_mics or import_mics_with_metadata
 #'
@@ -6,18 +6,20 @@
 #' @param title Title of plot
 #' @param y_min Minimum value for plot, some extra space will be added below so the lowest tested concentration is a reasonable value
 #' @param y_max Maximum value for plot, some extra space will be added below so the highest tested concentration is a reasonable value
-#' @param ECOFF
+#' @param ECOFF Numeric, string, or NULL, an ECOFF to draw as a horizontal line (e.g. 4 or "<=4"); NULL for no line
 #' @param ECOFF_scale defaults to "MIC", meaning the ECOFF provided will be in concentration directly, if you have already taken log2(ECOFF) then change this to "log"
 #' @param covariate string, name of a column in data
 #' @param covariate_title what to name the legend for the covariate
-#' @param expand.grid.axis.lines logical, if TRUE increases linewidth of axes and gridlines to 0.75
+#' @inheritParams plot_fm
 #'
 #' @importFrom ggnewscale new_scale_color
 #'
-#' @return
+#' @return A ggplot object showing each observation's censoring interval
+#'   (log2 scale) against time, with arrows for left- and right-censored values.
 #' @export
 #'
 #' @examples
+#' preview_data(simulate_mics(n = 100), title = "Simulated MICs", ECOFF = 2)
 preview_data = function(data, title = "", y_min = NULL, y_max = NULL, ECOFF = NULL, ECOFF_scale = "MIC", covariate = NULL, covariate_title = "Legend", expand.grid.axis.lines = FALSE){
 
   if(is.null(y_max)){

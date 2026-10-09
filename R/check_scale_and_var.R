@@ -1,13 +1,29 @@
-#' Title
+#' Check Component Widths and Covariate Variances of a Fitted Model
 #'
-#' @param output List, output of a fit_EM()
+#' Diagnostic check of a fitted model: compares the estimated width (sigma) of
+#' each fitted component, and the average variance of its mu model coefficients,
+#' with the range of tested concentrations, and prints a message for each
+#' component saying whether these values look reasonable.
+#'
+#' @inheritParams plot_fm
 #'
 #' @importFrom purrr pmap
 #'
-#' @return
+#' @return A tibble with one row per fitted component and columns Component,
+#'   "Avg Variance of Covariates" (mean of the diagonal of the coefficient
+#'   covariance matrix of the mu model), "Component Width (sigma)", and
+#'   "MIC Range" (range of tested concentrations on the log2 scale). Messages
+#'   flag components wider than twice the MIC range or whose average variance is
+#'   more than ten times the MIC range.
 #' @export
 #'
 #' @examples
+#' \donttest{
+#' data = simulate_mics()
+#' output = fit_EM(model = "pspline", approach = "full", pre_set_degrees = c(4, 4),
+#'                 visible_data = data, max_it = 300, verbose = 0)
+#' check_scale_and_var(output)
+#' }
 check_scale_and_var = function(output) {
   ub =
     case_when(

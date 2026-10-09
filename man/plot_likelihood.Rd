@@ -11,10 +11,16 @@ plot_likelihood(likelihood_documentation, format = "tibble")
 
 \item{format}{string, either "tibble" or "matrix". Describes format of likelihood documentation.}
 }
+\value{
+A ggplot object showing the log likelihood at each step, with points
+  colored by whether the log likelihood increased or decreased from the
+  previous step.
+}
 \description{
 Plot likelihood curve of fitted model over the steps of the EM algorithm
 }
 \examples{
+\donttest{
 data = simulate_mics()
 output = fit_EM(model = "pspline",
 approach = "full",
@@ -33,6 +39,7 @@ initial_weighting = 3,
 sd_initial = 0.2
 )
 plot_likelihood(likelihood_documentation = output$likelihood)
+}
 
 
 }

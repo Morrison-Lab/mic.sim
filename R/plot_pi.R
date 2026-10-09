@@ -1,22 +1,19 @@
-#' Title
+#' Plot Fitted Component Weights
 #'
-#' @param output
-#' @param df
-#' @param start_date
-#' @param add_log_reg
-#' @param ecoff
-#' @param s_breakpoint
-#' @param r_breakpoint
-#' @param visual_split
-#' @param skip
-#' @param x_axis_t_breaks
+#' Builds the lower panel of plot_fm(): the fitted proportion of isolates in
+#' each component (pi) over time with 95\% confidence bands, optionally with
+#' logistic regression curves for isolates above and below an ECOFF,
+#' breakpoints, or visual split (see log_reg()). Called by plot_fm(); it is not
+#' usually called directly.
+#'
+#' @inheritParams plot_fm
+#' @inheritParams plot_mean
 #'
 #' @keywords internal
 #'
-#' @return
+#' @return A ggplot object.
 #' @export
 #'
-#' @examples
 plot_pi = function(output, df, start_date, add_log_reg, ecoff, s_breakpoint, r_breakpoint, visual_split, skip, x_axis_t_breaks){
 
   pi_bounds = tibble(t = seq(0, max(output$possible_data$t), len = 300),

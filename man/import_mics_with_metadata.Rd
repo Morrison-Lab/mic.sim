@@ -44,32 +44,58 @@ import_mics_with_metadata(
 
 \item{concentration_by_covariate}{Data frame. Table, columns "low_con" and "high_con" are matched to data using covariates. Include one row for each combination of covariates.}
 }
+\value{
+A tibble with one row per observation and columns obs_id,
+  left_bound and right_bound (the interval containing the true MIC; a
+  left-censored MIC has left_bound -Inf on the log2 scale and a
+  right-censored MIC has right_bound Inf), mic_column (the original
+  values), code_column (if supplied), lr_column (if log_reg_value is TRUE),
+  left_bound_mic and right_bound_mic (if include_mic_bounds is TRUE), the
+  metadata_columns, and low_con and high_con (the lowest and highest tested
+  concentrations). The "scale" attribute records the scale of the bounds.
+}
 \description{
-Import MICs and Covariates
+Converts a column of MIC values (optionally with a separate column of
+censoring symbols such as "<=" or ">") into the interval-censored format
+used by fit_EM(): a left and right bound for each observation, on the log2
+scale by default, together with the requested covariate columns.
 }
 \examples{
-import_mics_with_metadata(data = tibble(MIC_A = c("≤0.12", ">16", 4, 2), t = runif(4, 0, 10)),
-                         mic_column = "MIC_A",
-                         metadata_columns = "t",
-                         log_reg_value = TRUE,
-                         scale = "log",
-                         round = TRUE)
+import_mics_with_metadata(
+  data = tibble::tibble(MIC_A = c("\u22640.12", ">16", 4, 2), t = runif(4, 0, 10)),
+  mic_column = "MIC_A",
+  metadata_columns = "t",
+  log_reg_value = TRUE,
+  scale = "log",
+  round = TRUE
+)
 
-import_mics_with_metadata(data = tibble(MIC_A = c(0.125, 16, 4, 2), code_A = c("≤", ">", NA, NA), t = runif(4, 0, 10)),
-                         mic_column = "MIC_A",
-                         metadata_columns = "t",
-                         code_column = "code_A",
-                         log_reg_value = FALSE,
-                         scale = "log",
-                         round = FALSE,
-                         include_mic_bounds = TRUE)
+import_mics_with_metadata(
+  data = tibble::tibble(
+    MIC_A = c(0.125, 16, 4, 2),
+    code_A = c("\u2264", ">", NA, NA),
+    t = runif(4, 0, 10)
+  ),
+  mic_column = "MIC_A",
+  metadata_columns = "t",
+  code_column = "code_A",
+  log_reg_value = FALSE,
+  scale = "log",
+  round = FALSE,
+  include_mic_bounds = TRUE
+)
 
-import_mics_with_metadata(data = tibble(MIC_A = c("≤10/1", ">80/8", "40/4", "20/2"), t = runif(4, 0, 10)),
-                         mic_column = "MIC_A",
-                         metadata_columns = "t",
-                         combination_agent = 2,
-                         log_reg_value = FALSE,
-                         scale = "log",
-                         round = FALSE)
+import_mics_with_metadata(
+  data = tibble::tibble(
+    MIC_A = c("\u226410/1", ">80/8", "40/4", "20/2"),
+    t = runif(4, 0, 10)
+  ),
+  mic_column = "MIC_A",
+  metadata_columns = "t",
+  combination_agent = 2,
+  log_reg_value = FALSE,
+  scale = "log",
+  round = FALSE
+)
 
 }

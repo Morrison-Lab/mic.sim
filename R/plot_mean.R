@@ -1,27 +1,31 @@
-#' Title
+#' Plot Data and Fitted Component Means
 #'
-#' @param output
-#' @param df
-#' @param results
-#' @param start_date
-#' @param fitted_comp
-#' @param title
-#' @param plot_min
-#' @param plot_max
-#' @param ecoff
-#' @param s_breakpoint
-#' @param r_breakpoint
-#' @param visual_split
-#' @param x_axis_t_breaks
-#' @param assumed_components
-#' @param n_fitted_components
+#' Builds the upper panel of plot_fm(): the interval-censored log2 MICs over
+#' time with the fitted component means (and their confidence bands) and any
+#' ECOFF, breakpoint, or visual split lines. Called by plot_fm(), which prepares
+#' all of its arguments; it is not usually called directly.
+#'
+#' @inheritParams plot_fm
+#' @param df Data frame, output$possible_data with added columns cens ("lc",
+#'   "rc", or "int") and mid (a plotting position for each observation), as
+#'   created in plot_fm()
+#' @param results Tibble with columns c (component number) and dnc (logical,
+#'   TRUE if the mu model for that component did not converge); only used for
+#'   reduced or partially converged models
+#' @param fitted_comp The fitted mu model of the single component being plotted
+#'   when only one component mean is shown, otherwise NULL
+#' @param plot_min Numeric, lower limit of the y axis (log2 scale)
+#' @param plot_max Numeric, upper limit of the y axis (log2 scale)
+#' @param assumed_components Numeric, number of components in the model,
+#'   including any component whose mean was not estimated (output$ncomp)
+#' @param n_fitted_components Numeric, number of components whose mean model
+#'   was estimated and converged (0, 1, or 2)
 #'
 #' @keywords internal
 #'
-#' @return
+#' @return A ggplot object.
 #' @export
 #'
-#' @examples
 plot_mean = function(output, df, results, start_date, fitted_comp, title, plot_min, plot_max, ecoff, s_breakpoint, r_breakpoint, visual_split, x_axis_t_breaks, assumed_components, n_fitted_components){
   if(n_fitted_components == 2){
     mean = make_2C_mean_plot(output = output, df = df, start_date = start_date, title = title, plot_min = plot_min, plot_max = plot_max)
@@ -56,7 +60,7 @@ mean_plot_add_splits = function(mean, ecoff, s_breakpoint, r_breakpoint, visual_
 
     if(!is.na(s_breakpoint)){
       s_line = case_when(
-        grepl("≤",s_breakpoint) ~ s_breakpoint %>% as.character() %>% parse_number() %>% log2,
+        grepl("\u2264",s_breakpoint) ~ s_breakpoint %>% as.character() %>% parse_number() %>% log2,
         grepl("=",s_breakpoint) ~ s_breakpoint %>% as.character() %>% parse_number() %>% log2,
         grepl("<",s_breakpoint) ~ s_breakpoint %>% as.character() %>% parse_number() %>% log2 - 1,
         TRUE ~ s_breakpoint %>% as.character() %>% parse_number() %>% log2
@@ -66,7 +70,7 @@ mean_plot_add_splits = function(mean, ecoff, s_breakpoint, r_breakpoint, visual_
 
     if(!is.na(r_breakpoint)){
       r_line = case_when(
-        grepl("≥",r_breakpoint) ~ r_breakpoint %>% as.character() %>% parse_number() %>% log2 - 1,
+        grepl("\u2265",r_breakpoint) ~ r_breakpoint %>% as.character() %>% parse_number() %>% log2 - 1,
         grepl("=",r_breakpoint) ~ r_breakpoint %>% as.character() %>% parse_number() %>% log2 - 1,
         grepl(">",r_breakpoint) ~ r_breakpoint %>% as.character() %>% parse_number() %>% log2,
         TRUE ~ r_breakpoint %>% as.character() %>% parse_number() %>% log2 - 1
@@ -75,7 +79,7 @@ mean_plot_add_splits = function(mean, ecoff, s_breakpoint, r_breakpoint, visual_
 
     if(!is.na(ecoff)){
       ecoff_line = case_when(
-        grepl("≤", ecoff) ~ ecoff %>% as.character() %>% parse_number() %>% log2,
+        grepl("\u2264", ecoff) ~ ecoff %>% as.character() %>% parse_number() %>% log2,
         grepl("=", ecoff) ~ ecoff %>% as.character() %>% parse_number() %>% log2,
         grepl("<", ecoff) ~ ecoff %>% as.character() %>% parse_number() %>% log2 - 1,
         TRUE ~ ecoff %>% as.character() %>% parse_number() %>% log2
@@ -90,7 +94,7 @@ mean_plot_add_splits = function(mean, ecoff, s_breakpoint, r_breakpoint, visual_
 
     if(!is.na(visual_split)){
       visual_split_line = case_when(
-        grepl("≤", visual_split) ~ visual_split %>% as.character() %>% parse_number() %>% log2,
+        grepl("\u2264", visual_split) ~ visual_split %>% as.character() %>% parse_number() %>% log2,
         grepl("=", visual_split) ~ visual_split %>% as.character() %>% parse_number() %>% log2,
         grepl("<", visual_split) ~ visual_split %>% as.character() %>% parse_number() %>% log2 - 1,
         TRUE ~ visual_split %>% as.character() %>% parse_number() %>% log2

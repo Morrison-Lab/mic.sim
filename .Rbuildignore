@@ -9,3 +9,6 @@
 ^pkgdown$
 ^\.github$
 ^vignettes/articles$
+^data-raw$
+^LICENSE\.md$
+^example_data\.csv$
