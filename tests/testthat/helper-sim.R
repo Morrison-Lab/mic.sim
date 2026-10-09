@@ -7,7 +7,7 @@ sim_two_component_data = function(n = 300, seed = 1, scale = "log"){
       z <- 0.3 + 0.02 * t
       tibble::tibble("1" = 1 - z, "2" = z)
     },
-    `E[X|T,C]` = function(t, c){
+    mean_function = function(t, c){
       dplyr::case_when(c == "1" ~ -2 + 0.1 * t,
                        c == "2" ~ 3,
                        TRUE ~ NaN)
