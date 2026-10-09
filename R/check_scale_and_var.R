@@ -5,7 +5,7 @@
 #' with the range of tested concentrations, and prints a message for each
 #' component saying whether these values look reasonable.
 #'
-#' @param output List, output of a fit_EM()
+#' @inheritParams plot_fm
 #'
 #' @importFrom purrr pmap
 #'
