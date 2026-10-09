@@ -109,7 +109,9 @@ import_mics_with_metadata = function(data, mic_column, metadata_columns = NULL, 
 
   if(!"low_con" %in% present){
     df = df %>% mutate(low_con = case_when(
-      min(left_bound, na.rm = TRUE) == -Inf ~ min(right_bound, na.rm = TRUE),
+      # left-censored values have left_bound -Inf on the log scale, 0 on the MIC scale
+      min(left_bound, na.rm = TRUE) == -Inf |
+        (tolower(scale) == "mic" & min(left_bound, na.rm = TRUE) == 0) ~ min(right_bound, na.rm = TRUE),
       TRUE ~ min(left_bound, na.rm = TRUE)
     ))
   }

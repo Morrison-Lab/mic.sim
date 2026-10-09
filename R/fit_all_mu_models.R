@@ -19,7 +19,7 @@ fit_all_mu_models = function(possible_data, ncomp, mu_formula, approach = NULL, 
     TRUE ~ -1
   ) %>% unique()
   if(length(fitted_comp) == 1 && fitted_comp < 0){
-    errorCondition("Invalid value of fixed side, use 'LC', 'RC', or 'NULL'")
+    stop("Invalid value of fixed side, use 'LC', 'RC', or 'NULL'", call. = FALSE)
   }
   if(!is.list(mu_formula)){
     mu_formula = list(mu_formula)
@@ -40,11 +40,11 @@ fit_all_mu_models = function(possible_data, ncomp, mu_formula, approach = NULL, 
       mu_models_new = purrr::map(mu_models_new, ~set_model_attr(.x, possible_data))
       attr(mu_models_new, "model") <- attr(possible_data, "model")
     }else{
-      errorCondition("model must be 'surv', 'polynomial', or 'mgcv'")
+      stop("model must be 'surv', 'polynomial', or 'mgcv'", call. = FALSE)
     }
 
   }else{
-    errorCondition("mu_formula should be a list of formulas equal to the number of component means being estimated or a single formula to be repeated for all the components")
+    stop("mu_formula should be a list of formulas equal to the number of component means being estimated or a single formula to be repeated for all the components", call. = FALSE)
   }
 
   attr(mu_models_new, "fixed_side") <- fixed_side

@@ -130,7 +130,7 @@ initial_weighting_reduced = function(visible_data, fixed_side, extra_row, ECOFF)
             ###Also only works with scale == "log"
           )
       }else{
-        errorCondition("fixed_side should be LC or RC")
+        stop("fixed_side should be LC or RC", call. = FALSE)
       }
     }
   possible_data %>% return()

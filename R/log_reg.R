@@ -44,7 +44,7 @@ log_reg <- function(data, split_by = "ecoff", data_type, drug, date_col, date_ty
       mutate(t = as.numeric(date) - first_year) %>%
       suppressWarnings()
   }else{
-    errorCondition("pick decimal or year")
+    stop("pick decimal or year", call. = FALSE)
   }
 
   if(split_by == "S" | split_by == "s_breakpoint"){
@@ -54,7 +54,7 @@ log_reg <- function(data, split_by = "ecoff", data_type, drug, date_col, date_ty
                           TRUE ~ parse_number(as.character(s_breakpoint))
       )
     }else{
-      errorCondition("split_by set to s_breakpoint and no s_breakpoint provided")
+      stop("split_by set to s_breakpoint and no s_breakpoint provided", call. = FALSE)
     }
 
   }else if(split_by == "R" | split_by == "r_breakpoint"){
@@ -64,7 +64,7 @@ log_reg <- function(data, split_by = "ecoff", data_type, drug, date_col, date_ty
                           TRUE ~ parse_number(as.character(r_breakpoint))
       )
     }else{
-      errorCondition("split_by set to r_breakpoint and no r_breakpoint provided")
+      stop("split_by set to r_breakpoint and no r_breakpoint provided", call. = FALSE)
 
     }
   }else if(split_by == "visual_split"){
@@ -75,7 +75,7 @@ log_reg <- function(data, split_by = "ecoff", data_type, drug, date_col, date_ty
         TRUE ~ parse_number(as.character(visual_split))
       )
     }else{
-      errorCondition("split_by set to visual_split and no visual_split provided, either change split_by to s_breakpoint or r_breakpoint or ecoff or else provide a value for visual_split")
+      stop("split_by set to visual_split and no visual_split provided, either change split_by to s_breakpoint or r_breakpoint or ecoff or else provide a value for visual_split", call. = FALSE)
 
     }
   }else{
@@ -86,7 +86,7 @@ log_reg <- function(data, split_by = "ecoff", data_type, drug, date_col, date_ty
         TRUE ~ parse_number(as.character(ecoff))
       )
     }else{
-      errorCondition("split_by set to ecoff and no ecoff provided, either change split_by to s_breakpoint or r_breakpoint or visual_split or else provide a value for ecoff")
+      stop("split_by set to ecoff and no ecoff provided, either change split_by to s_breakpoint or r_breakpoint or visual_split or else provide a value for ecoff", call. = FALSE)
 
     }
 
@@ -134,7 +134,7 @@ log_reg <- function(data, split_by = "ecoff", data_type, drug, date_col, date_ty
 
 
   }else{
-    errorCondition("choose either import or possible_data for data_type")
+    stop("choose either import or possible_data for data_type", call. = FALSE)
   }
   if(split_by == "s_breakpoint" | split_by == "S"){
     split_df = df %>%

@@ -32,7 +32,7 @@
 draw_covariates <- function(input, cov_list){
   if(cov_list[1] == "numeric"){draw_numerical_covariate(input, cov_list)}
   else if(cov_list[1] == "categorical"){draw_categorical_covariate(input, cov_list)}
-  else{errorCondition("Invalid type, pick either numeric or categorical")}
+  else{stop("Invalid type, pick either numeric or categorical", call. = FALSE)}
 }
 
 
@@ -49,7 +49,7 @@ draw_numerical_covariate <- function(input, numerical_variable_vector){
   else if(numerical_variable_vector[2] == "uniform"){
     runif(nrow(input), min = as.numeric(numerical_variable_vector[3]), max = as.numeric(numerical_variable_vector[4]))
   }
-  else{warningCondition("Invalid distribution, choose uniform or normal")}
+  else{warning("Invalid distribution, choose uniform or normal", call. = FALSE)}
 }
 
 

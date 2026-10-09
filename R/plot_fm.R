@@ -75,7 +75,7 @@ plot_fm <- function(output, title ="", add_log_reg = FALSE, ecoff = NA, s_breakp
       results = tibble(c = 1:2, dnc)
       fitted_comp = output$mu_model[[1]]
     }else{
-      errorCondition("Invalid value for fixed_side")
+      stop("Invalid value for fixed_side", call. = FALSE)
     }
   }else{
 
@@ -215,7 +215,7 @@ if(attr(df, "model") != "mgcv"){
       return(plot_max)
     }
   }else{
-    errorCondition("choose 'min' or 'max'")
+    stop("choose 'min' or 'max'", call. = FALSE)
   }
 }
 

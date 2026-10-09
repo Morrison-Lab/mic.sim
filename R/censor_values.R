@@ -73,7 +73,7 @@ else if(scale == "log"){
 
   return(df)
 }
-    else{warningCondition(message = "Choose scale: MIC or log")}
+    else{warning("Choose scale: MIC or log", call. = FALSE)}
   }
 
 

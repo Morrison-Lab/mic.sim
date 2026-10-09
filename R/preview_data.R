@@ -71,7 +71,7 @@ preview_data = function(data, title = "", y_min = NULL, y_max = NULL, ECOFF = NU
       ggtitle(title)  + xlab("Time") +
       scale_color_discrete(name = covariate_title, type = hex_colors)
   }else{
-    errorCondition("covariate should be a string and the name of a column in data")
+    stop("covariate should be a string and the name of a column in data", call. = FALSE)
   }
 
   if(!is.null(ECOFF)){

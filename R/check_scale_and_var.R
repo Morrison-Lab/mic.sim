@@ -85,10 +85,6 @@ check_scale_and_var = function(output) {
 
 
 
-get_scale = function(mu_model) {
-  mu_model$scale %>% return()
-}
-
 get_avg_var = function(mu_model) {
   tibble(var = diag(mu_model$var) %>% mean) %>% return()
 }
@@ -131,6 +127,6 @@ message_var_check = function(fitted_comp, var_check, ...) {
       )
     )
   } else{
-    errorCondition("Check variances failed")
+    warning("Check variances failed", call. = FALSE)
   }
 }

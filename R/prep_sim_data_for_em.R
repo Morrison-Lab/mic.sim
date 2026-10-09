@@ -89,7 +89,7 @@ else if (scale == "log"){
     df <- cbind(df, truth) %>% tibble()
   }
   }
-  else{warningCondition(message = "Either (A.) set scale variable to MIC or log or (B.) data.sim should have a scale attribute of either MIC or log")}
+  else{warning("Either (A.) set scale variable to MIC or log or (B.) data.sim should have a scale attribute of either MIC or log", call. = FALSE)}
 
 return(df)
 
