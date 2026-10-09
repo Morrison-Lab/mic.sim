@@ -55,16 +55,7 @@ example_data %>%
     comp == 1 ~ "Component 1",
     TRUE ~ "Component 2"
   )) %>% 
-  ggplot() +
-  geom_segment(aes(x = t, xend = t, y = left_bound, yend = right_bound, color = verbose_comp), data = (. %>% filter(left_bound != -Inf & right_bound != Inf)), alpha = 0.3) +
-  geom_segment(aes(x = t, xend = t, y = right_bound, yend = left_bound, color = verbose_comp), data = (. %>% filter(left_bound == -Inf) %>% mutate(left_bound = low_con - 2)), arrow = arrow(length = unit(0.03, "npc")), alpha = 0.3) +
-  geom_segment(aes(x = t, xend = t, y = left_bound, yend = right_bound, color = verbose_comp), data = (. %>% filter(right_bound == Inf) %>% mutate(right_bound = high_con + 2)), arrow = arrow(length = unit(0.03, "npc")), alpha = 0.3) +
-  geom_point(aes(x = t, y = left_bound, color = verbose_comp), data = . %>% filter(left_bound != -Inf), alpha = 0.3) +
-  geom_point(aes(x = t, y = right_bound, color = verbose_comp), data = . %>% filter(right_bound != Inf), alpha = 0.3) +
-  geom_function(fun = function(t){`E[X|T,C]`(t, c = "1")}, aes(color = "Component 1 Mean")) +
-  geom_function(fun = function(t){`E[X|T,C]`(t, c = "2")}, aes(color = "Component 2 Mean")) +
-  xlim(attr(t_dist, "min") ,attr(t_dist, "max")) +
-  ylim(low_con - 2, high_con + 2) %>% suppressWarnings()
+  preview_data(covariate = "verbose_comp", covariate_title = "Component") %>% suppressMessages()
 ```
 
 ```{r}
@@ -72,15 +63,12 @@ out_1 = fit_EM(
   model = "pspline",
   approach = "full",
   visible_data = example_data,
-  max_degree = 5,
-  verbose = 1,
-  initial_weighting = 9,
-  scale = "log"
+  pre_set_degrees = c(4,4),
+  verbose = 0
 )
 
 plot_likelihood(out_1$likelihood)
 plot_fm(out_1, title = "Surv Full")
-out_1$cv_results
 ```
 
 ```{r}
