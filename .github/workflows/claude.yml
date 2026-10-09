@@ -1,12 +1,12 @@
 # Workflow derived from https://github.com/Morrison-Lab/gha/blob/main/examples/claude.yml
-# NOTE: requires the CLAUDE_CODE_OAUTH_TOKEN repository secret. Pass it
-# explicitly (below) rather than via `secrets: inherit`: GitHub only inherits
-# secrets into a reusable workflow owned by the same org/user, so a cross-owner
-# caller inherits an empty token and the run fails env-validation.
+# Agent-mode Claude Code bot: responds to @claude mentions from trusted
+# authors (OWNER/MEMBER/COLLABORATOR), edits files, and opens/updates PRs.
+# Requires the CLAUDE_CODE_OAUTH_TOKEN (or ANTHROPIC_API_KEY) repository
+# secret. Secrets are passed explicitly rather than via `secrets: inherit`,
+# because a cross-owner caller would inherit an empty token.
 name: Claude Code
 
 on:
-  workflow_dispatch:
   issue_comment:
     types: [created]
   pull_request_review_comment:
@@ -15,28 +15,35 @@ on:
     types: [opened, assigned]
   pull_request_review:
     types: [submitted]
+  workflow_dispatch:
 
 jobs:
   claude:
+    # workflow_dispatch is trusted by construction (the dispatching actor
+    # needs write access); the other events require an @claude mention from
+    # a trusted author.
     if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude'))) ||
-      github.event_name == 'workflow_dispatch'
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
+      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude') && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
+      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')) && contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.issue.author_association))
     permissions:
       contents: write
       pull-requests: write
       issues: write
       id-token: write
-      actions: write
-    uses: Morrison-Lab/gha/.github/workflows/claude.yml@v1
+      actions: write       # dispatch the review workflow via `gh workflow run`
+    uses: Morrison-Lab/gha/.github/workflows/claude.yml@v2
     secrets:
       CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      SUBMODULES_TOKEN: ${{ secrets.SUBMODULES_TOKEN }}
-    # with:
-    #   setup-r: true
-    #   prompt-addendum: |
-    #     This is the mic.sim R package. Before committing, run
-    #     lintr::lint_package() and devtools::test(); add a NEWS.md bullet
-    #     for user-facing changes.
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      WORKFLOW_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}   # optional; for editing .github/workflows
+    with:
+      prompt-addendum: |
+        This is the mic.sim R package, headed to CRAN. Before committing:
+        - `devtools::document()`; don't hand-edit NAMESPACE or man/.
+        - `devtools::test()`; cover new or changed behaviour with testthat
+          and use `set.seed()` so results are deterministic.
+        - `spelling::spell_check_package()`; add real words to inst/WORDLIST.
+        - `devtools::check()` should not gain any new NOTE, WARNING, or ERROR.

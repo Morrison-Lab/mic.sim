@@ -1,13 +1,42 @@
 # Workflow derived from https://github.com/Morrison-Lab/gha/blob/main/examples/claude-code-review.yml
-# NOTE: requires the CLAUDE_CODE_OAUTH_TOKEN repository secret. Pass it
-# explicitly rather than via `secrets: inherit`: cross-owner callers inherit
-# an empty token and the run fails env-validation. The workflow_dispatch path
-# lets claude.yml re-dispatch a review after an @claude run pushes commits.
+# NOTE: Do NOT declare a top-level `concurrency:` block in this caller workflow.
+# The reusable workflow manages per-PR concurrency internally on its job
+# (`group: claude-review-<PR>`). A top-level `concurrency:` block with a PR-scoped
+# group name deadlocks GitHub Actions against the nested job and cancels the run
+# ([gha#437](https://github.com/Morrison-Lab/gha/issues/437)).
+#
+# NOTE: requires either CLAUDE_CODE_OAUTH_TOKEN (Claude Max plan) or
+# ANTHROPIC_API_KEY (direct API / GitHub App via /install-github-app). Pass
+# secrets explicitly (below) rather than via `secrets: inherit`: GitHub only
+# inherits secrets into a reusable workflow owned by the same org/user, so a
+# cross-owner caller (e.g. a UCD-SERG-org repo calling this d-morrison
+# user-owned workflow) inherits an empty token and the run fails env-validation.
+# Default: mention-triggered only. claude.yml re-dispatches this workflow on an
+# `@claude review` mention (and after an @claude run pushes commits) via
+# workflow_dispatch. Keep the file named claude-code-review.yml (or set
+# claude.yml's review-workflow-file to match) so the dispatch resolves.
+# Optional: uncomment pull_request for automatic review, and uncomment
+# issue_comment to allow trusted collaborators to trigger `/review` directly.
+# If you have DISABLED claude.yml, do BOTH of these, or nothing happens: uncomment
+# the issue_comment trigger below, and set the repository variable
+# CLAUDE_AGENT_DISABLED to `true`. dispatch-on-comment only ever runs on an
+# issue_comment event, so the variable on its own changes nothing. With both in
+# place an `@claude review` mention dispatches a review here rather than
+# reaching a workflow that no longer answers it. See dispatch-on-comment below
+# for why the fallback is opt-in.
 name: Claude Code Review
 
 on:
+  # Optional: automatic review on PR activity.
+  # Note: GitHub suppresses pull_request workflow runs when a pull request
+  # has merge conflicts with the target branch. For conflicting PRs, resolve
+  # the conflict or trigger review via workflow_dispatch below (gha#859).
   pull_request:
     types: [opened, synchronize, ready_for_review, reopened]
+  # Optional: direct on-demand `/review` path (independent of @claude), plus
+  # the opt-in `@claude review` fallback for repos with the agent disabled.
+  # issue_comment:
+  #   types: [created]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -16,15 +45,253 @@ on:
         type: string
 
 jobs:
+  # `/review` at the start of a PR comment (from an OWNER/MEMBER/COLLABORATOR)
+  # dispatches an on-demand review of that PR — independent of claude.yml. It's a
+  # slash command, not an `@claude …` mention, on purpose: any `@claude` also
+  # wakes claude.yml. This re-enters the workflow_dispatch path below via
+  # `gh workflow run` (the reusable workflow's jobs skip a raw issue_comment
+  # run), so `gh workflow run` needs this file on the default branch first.
+  # Enable the issue_comment trigger above to activate this path.
+  #
+  # Opt-in second path, for repos that have switched the agent OFF: uncomment
+  # the issue_comment trigger above and set the repository variable
+  # CLAUDE_AGENT_DISABLED to `true`, and an `@claude review` mention dispatches
+  # a review here too. Both are needed -- this job only runs on issue_comment.
+  #
+  # Set it ONLY if claude.yml is disabled in your repo. With the agent live,
+  # both workflows would answer the same mention and dispatch two paid review
+  # runs of possibly different heads -- the exact double-dispatch of
+  # UCD-SERG/serodynamics#277. Unset (the default) keeps `/review` as the only
+  # comment trigger, so today's behaviour is unchanged.
+  #
+  # Without it, a repo with the agent off has no mention path at all: the
+  # phrasing people actually reach for produces a one-second run with every job
+  # skipped and nothing posted, which is indistinguishable from a broken bot
+  # (gha#447).
+  dispatch-on-comment:
+    # OWNER/MEMBER/COLLABORATOR only by default. To also admit a GitHub App
+    # bot (author_association is usually NONE), OR in a login check -- e.g.
+    #   || contains(fromJSON('["cursor[bot]"]'), github.event.comment.user.login)
+    # -- and mirror the same logins in claude.yml's trusted-bot-logins.
+    if: >-
+      github.event_name == 'issue_comment' &&
+      github.event.issue.pull_request &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association) &&
+      (startsWith(github.event.comment.body, '/review') ||
+      (vars.CLAUDE_AGENT_DISABLED == 'true' &&
+      contains(github.event.comment.body, '@claude')))
+    runs-on: ubuntu-latest
+    permissions:
+      actions: write        # dispatch this workflow via `gh workflow run`
+      issues: write         # acknowledge the /review comment
+      pull-requests: read   # read PR metadata and changed files list
+    steps:
+      - name: Parse this workflow's ref
+        id: this-wf
+        uses: Morrison-Lab/gha/.github/actions/parse-workflow-ref@v2
+        with:
+          workflow-ref: ${{ github.workflow_ref }}
+
+      # Gated on the fallback being enabled, rather than on the body not being a
+      # `/review` command. Keying it on `!startsWith(body, '/review')` dropped a
+      # genuine mention in a body that merely BEGAN with the literal string --
+      # `/reviewers should look at this, @claude review` skipped this step, and
+      # the dispatch step's stricter regex then rejected it too, so nothing ran
+      # and nothing was posted. Keying on the variable also states the real
+      # condition; with it unset this never runs, so the double-dispatch hazard
+      # above cannot reappear.
+      # Reuses the matcher claude.yml already uses rather than adding a second
+      # inline pattern, which is how the two drifted apart before (gha#341).
+      # It strips code spans and fenced blocks first, so a comment quoting the
+      # phrasing while writing about it does not dispatch (gha#344).
+      - name: Check for an `@claude review` request
+        id: mention
+        if: ${{ vars.CLAUDE_AGENT_DISABLED == 'true' }}
+        uses: Morrison-Lab/gha/.github/actions/detect-review-request@v2
+        with:
+          comment-body: ${{ github.event.comment.body }}
+
+      - name: Install helper scripts
+        id: scripts
+        uses: Morrison-Lab/gha/.github/actions/install-gha-scripts@v3
+        with:
+          scripts: 'detect-pr-workflow-edits.sh'
+
+      - name: Resolve PR info
+        id: pr-info
+        uses: Morrison-Lab/gha/.github/actions/resolve-pr-info@v3
+        with:
+          pr-number: ${{ github.event.issue.number }}
+          default-branch: ${{ github.event.repository.default_branch }}
+
+      - name: Dispatch a review for the commented PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          WF_PATH: ${{ steps.this-wf.outputs.path }}
+          SCRIPTS_DIR: ${{ steps.scripts.outputs.dir }}
+          IS_CLOSED: ${{ steps.pr-info.outputs.is_closed }}
+          IS_STACKED: ${{ steps.pr-info.outputs.is_stacked }}
+          PR_BASE_BRANCH: ${{ steps.pr-info.outputs.pr_base_branch }}
+          PR_BRANCH: ${{ steps.pr-info.outputs.pr_branch }}
+          PR_HEAD_REPO: ${{ steps.pr-info.outputs.pr_head_repo }}
+          REF_ARG: ${{ steps.pr-info.outputs.ref_arg }}
+          PR_CHANGED_FILES: ${{ steps.pr-info.outputs.pr_changed_files }}
+          # Passed via env (not inlined) so the comment body is a shell value,
+          # never interpreted as script — avoids injection.
+          COMMENT_BODY: ${{ github.event.comment.body }}
+          # Empty when the step above was skipped, i.e. when the fallback is off.
+          MENTION_MATCH: ${{ steps.mention.outputs.match }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -euo pipefail
+          # The job-level `if:` only does cheap pre-filters; GitHub Actions
+          # expressions can't reliably tell '/review' from '/reviewer' or handle
+          # a newline/tab after the command, and `contains(body, '@claude')`
+          # matches a mention anywhere, quoted ones included. Enforce the real
+          # match here: the body must either begin with a standalone '/review'
+          # token, followed by whitespace (space/tab/newline) or end-of-string,
+          # or be an `@claude review` request per the matcher step above.
+          if [[ "$COMMENT_BODY" =~ ^/review([[:space:]]|$) ]]; then
+            TRIGGER='/review'
+          elif [ "$MENTION_MATCH" = 'true' ]; then
+            TRIGGER='@claude review'
+          else
+            echo "Comment is neither a standalone '/review' command nor an '@claude review' request; skipping dispatch."
+            exit 0
+          fi
+          # This workflow's filename, so the dispatch resolves whatever you
+          # name the file — WF_PATH is the .github/workflows/<file> portion.
+          WF_FILE=$(basename "$WF_PATH")
+          # Metadata resolved via resolve-pr-info (gha#369, gha#916, gha#932).
+          if [ "$IS_CLOSED" = "true" ]; then
+            echo "::notice::PR #$PR_NUMBER is closed or merged; skipping review dispatch."
+            exit 0
+          fi
+          if [ "$IS_STACKED" = "true" ]; then
+            echo "::notice::PR #$PR_NUMBER targets base '$PR_BASE_BRANCH' instead of default branch (stacked PR); skipping review dispatch because default-branch dispatches cannot attach status checks to the PR head and would preempt in-flight pull_request reviews (gha#916, gha#921)."
+            NOTICE_BODY=":warning: \`$TRIGGER\` was not dispatched: PR #$PR_NUMBER targets base branch \`$PR_BASE_BRANCH\` instead of default branch (stacked PR). For security, manual dispatches cannot execute untrusted workflow YAML inherited from base branches, and default-branch dispatches cannot attach status checks to the PR head (gha#916, gha#921). When automatic review on pull_request is enabled, it runs with default-branch workflows restored and attaches checks to the PR head."
+            printf '%s' "$NOTICE_BODY" | jq -Rs '{body: .}' \
+              | gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                  --method POST \
+                  -H "Content-Type: application/json" \
+                  --input - > /dev/null || true
+            exit 0
+          fi
+          echo "Dispatching $WF_FILE to review PR #$PR_NUMBER ($PR_BRANCH) ($TRIGGER comment)."
+          DEFAULT_REF_ARGS=()
+          if [ -n "${DEFAULT_BRANCH:-}" ]; then
+            DEFAULT_REF_ARGS=(--ref "$DEFAULT_BRANCH")
+          fi
+          REF_ARGS=()
+          if [ -n "$REF_ARG" ]; then
+            read -r -a REF_ARGS <<< "$REF_ARG"
+          elif [ "$PR_HEAD_REPO" != "$REPO" ]; then
+            echo "::notice::PR #$PR_NUMBER is from a fork ($PR_HEAD_REPO); dispatching $WF_FILE from the default branch."
+            REF_ARGS=("${DEFAULT_REF_ARGS[@]}")
+          fi
+          # When the PR edits top-level workflow YAML, manual dispatches cannot
+          # execute untrusted workflow YAML from the PR branch, and default-branch
+          # dispatches cannot attach status checks to the PR head while preempting
+          # the in-flight push-triggered review (gha#598, gha#921).
+          # Skip review dispatch on workflow edits so the push-triggered pull_request review
+          # (which restores default-branch workflows after checkout) runs to completion on
+          # the PR head without being destroyed by a default-branch dispatch.
+          # Workflow-edit detection routes through detect-pr-workflow-edits.sh (gha#920).
+          # GET .../files is capped at 3000 files (GitHub REST "List pull
+          # requests files", read 2026-08-26). A 200 with a short list is
+          # not a complete tree. Keep in sync with list-pr-changed-files.sh.
+          changed="$PR_CHANGED_FILES"
+          listed=0
+          if ! files=$(gh api "repos/$REPO/pulls/$PR_NUMBER/files?per_page=100" --paginate --jq '.[].filename'); then
+            echo "::notice::Could not list a complete file set for PR #$PR_NUMBER; skipping review dispatch to avoid executing untrusted workflow YAML or preempting PR-head checks (gha#598, gha#921)."
+            NOTICE_BODY=":warning: \`$TRIGGER\` was not dispatched: Could not verify whether PR #$PR_NUMBER edits workflow files (file list API failed). When automatic review on pull_request is enabled, it runs with default-branch workflows restored and attaches checks to the PR head."
+            printf '%s' "$NOTICE_BODY" | jq -Rs '{body: .}' \
+              | gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                  --method POST \
+                  -H "Content-Type: application/json" \
+                  --input - > /dev/null || true
+            exit 0
+          else
+            files=$(printf '%s' "$files" | tr -d '\r')
+            if [ -n "$files" ]; then
+              listed=$(printf '%s\n' "$files" | grep -c . || true)
+            fi
+            if [ -z "$changed" ] || [ "$changed" = "null" ] || ! [[ "$changed" =~ ^[0-9]+$ ]] || [ "$listed" -ge 3000 ] || [ "$listed" -lt "$changed" ]; then
+              echo "::notice::Could not list a complete file set for PR #$PR_NUMBER; skipping review dispatch to avoid executing untrusted workflow YAML or preempting PR-head checks (gha#598, gha#921)."
+              NOTICE_BODY=":warning: \`$TRIGGER\` was not dispatched: PR #$PR_NUMBER file list was truncated ($listed of $changed files, cap 3000). When automatic review on pull_request is enabled, it runs with default-branch workflows restored and attaches checks to the PR head."
+              printf '%s' "$NOTICE_BODY" | jq -Rs '{body: .}' \
+                | gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                    --method POST \
+                    -H "Content-Type: application/json" \
+                    --input - > /dev/null || true
+              exit 0
+            else
+              detect_out="$(CALLER_WF_PATH="" bash "$SCRIPTS_DIR/detect-pr-workflow-edits.sh" - <<< "$files")"
+              if [ "$(sed -n 's/^workflow_edits=//p' <<< "$detect_out")" = "true" ]; then
+                echo "::notice::PR #$PR_NUMBER edits workflow files; skipping review dispatch because default-branch dispatches cannot attach status checks to the PR head and would preempt in-flight pull_request reviews (gha#921)."
+                NOTICE_BODY=":warning: \`$TRIGGER\` was not dispatched: PR #$PR_NUMBER edits workflow files (\`.github/workflows/*.yml\`). For security, manual dispatches cannot execute untrusted workflow YAML, and default-branch dispatches cannot attach status checks to the PR head (gha#921). When automatic review on pull_request is enabled, it runs with default-branch workflows restored and attaches checks to the PR head."
+                printf '%s' "$NOTICE_BODY" | jq -Rs '{body: .}' \
+                  | gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                      --method POST \
+                      -H "Content-Type: application/json" \
+                      --input - > /dev/null || true
+                exit 0
+              fi
+            fi
+          fi
+          # --repo is required: this job doesn't check out the repo, so gh has no
+          # git remote to infer it from (and gh doesn't read GITHUB_REPOSITORY).
+          gh workflow run "$WF_FILE" --repo "$REPO" "${REF_ARGS[@]}" -f pr_number="$PR_NUMBER"
+          # gh issue comment uses the GraphQL addComment mutation which requires
+          # pull_requests: write on pull requests. Use the REST endpoint, which
+          # accepts issues: write (gha#931).
+          NOTICE_BODY=":mag: \`$TRIGGER\` received -- dispatched a Claude review of this PR (see the [dispatch run]($RUN_URL)). The review posts as its own comment when it finishes."
+          if ! printf '%s' "$NOTICE_BODY" | jq -Rs '{body: .}' \
+            | gh api "repos/$REPO/issues/$PR_NUMBER/comments" \
+                --method POST \
+                -H "Content-Type: application/json" \
+                --input - > /dev/null; then
+            echo "::warning::Could not acknowledge the $TRIGGER comment."
+          fi
+
   review:
+    # pull_request and workflow_dispatch only; the issue_comment path is handled
+    # by dispatch-on-comment above (which re-enters via workflow_dispatch).
+    if: github.event_name != 'issue_comment'
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write   # posting job (gha#580); the model job is read-only
       issues: write
-      id-token: write
-    uses: Morrison-Lab/gha/.github/workflows/claude-code-review.yml@v1
+      # No id-token: write: the reusable workflow forwards github.token
+      # and skips the App-token exchange (gha#580).
+      actions: read   # post-review download-artifact; model job github_ci MCP
+      checks: read    # keep: required by @v2 until the slide, and again at the v3 (gha#833)
+    uses: Morrison-Lab/gha/.github/workflows/claude-code-review.yml@v2
     secrets:
-      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-      SUBMODULES_TOKEN: ${{ secrets.SUBMODULES_TOKEN }}
+      CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}   # Max-plan OAuth; empty when using API key
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}               # direct API key; empty when using OAuth
+      SUBMODULES_TOKEN: ${{ secrets.SUBMODULES_TOKEN }}   # optional; empty when unset
     with:
-      pr-number: ${{ github.event.pull_request.number || inputs.pr_number }}
+      # Wires the workflow_dispatch input through so claude.yml can re-dispatch
+      # a review on Claude's commits; empty (and ignored) on pull_request runs.
+      pr-number: ${{ inputs.pr_number }}
+    #   checkout-submodules: true   # SUBMODULES_TOKEN secret only for private submodules
+    #   allowed-bots: 'github-actions[bot],claude'   # accept more bot actors (default: github-actions[bot])
+    #   lab-manual: false           # skip the R/tidyverse SERG lab manual (default true; set false for non-R/Quarto repos)
+    #   reference-repos: 'Morrison-Lab/gha'  # check out reference repos into .reference-repos/ for the reviewer
+    #   apt-packages: maxima         # system packages for the reviewer's Bash tool, e.g. a CAS
+    #   pip-packages: sympy          # pip packages, e.g. a computer-algebra system for math-heavy repos
+    #   check-latex-macros: true    # flag LaTeX simplifiable via d-morrison/macros; also needs checkout-submodules: true
+    #   report-cost: false          # suppress the dollar-cost comment (default true)
+    #   model: claude-opus-4-8      # override the reviewer's model (default: claude-code-action's own default)
+    #   use-ai-config: false        # skip the Morrison-Lab/ai-config plugin (installed by default)
+    #   use-posit-skills: false     # skip the posit-dev/skills plugin (installed by default)
+    #   plugin-marketplaces: https://github.com/<owner>/<repo>.git   # further plugin sources
+    #   plugins: <plugin>@<marketplace-name>
+    #   extra-secret-names: EPI202_TOKEN EPI204_TOKEN  # export caller secrets to reviewer env (needs secrets: inherit)
+    #   timeout-minutes: 50  # cap the review job; defaults to 60
+    #   prompt-addendum: |
+    #     Repo-specific review guidance (e.g. Quarto/R conventions to enforce).
