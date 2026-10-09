@@ -11,12 +11,15 @@
 # inherits secrets into a reusable workflow owned by the same org/user, so a
 # cross-owner caller (e.g. a UCD-SERG-org repo calling this d-morrison
 # user-owned workflow) inherits an empty token and the run fails env-validation.
-# Default: mention-triggered only. claude.yml re-dispatches this workflow on an
-# `@claude review` mention (and after an @claude run pushes commits) via
-# workflow_dispatch. Keep the file named claude-code-review.yml (or set
-# claude.yml's review-workflow-file to match) so the dispatch resolves.
-# Optional: uncomment pull_request for automatic review, and uncomment
-# issue_comment to allow trusted collaborators to trigger `/review` directly.
+# Automatic review is ON here: the pull_request trigger below runs a review on
+# every PR push. (The gha example ships with it commented out, so reviews are
+# mention-triggered only; remove the pull_request trigger to go back to that.)
+# claude.yml also re-dispatches this workflow on an `@claude review` mention
+# (and after an @claude run pushes commits) via workflow_dispatch. Keep the
+# file named claude-code-review.yml (or set claude.yml's review-workflow-file
+# to match) so the dispatch resolves.
+# Optional: uncomment issue_comment to allow trusted collaborators to trigger
+# `/review` directly.
 # If you have DISABLED claude.yml, do BOTH of these, or nothing happens: uncomment
 # the issue_comment trigger below, and set the repository variable
 # CLAUDE_AGENT_DISABLED to `true`. dispatch-on-comment only ever runs on an
