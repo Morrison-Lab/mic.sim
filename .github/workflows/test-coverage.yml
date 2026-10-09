@@ -1,0 +1,19 @@
+# Workflow derived from https://github.com/Morrison-Lab/gha/blob/main/examples/test-coverage.yml
+# Measures test coverage with covr and uploads it to Codecov. CODECOV_TOKEN
+# is optional for a public repo (tokenless uploads work but are rate-limited).
+name: Test coverage
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  test-coverage:
+    uses: Morrison-Lab/gha/.github/workflows/test-coverage.yml@v2
+    secrets:
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}

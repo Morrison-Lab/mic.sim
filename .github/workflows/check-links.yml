@@ -1,14 +1,11 @@
-# Inline link-checker rather than using the Morrison-Lab/gha wrapper because the
-# wrapper doesn't expose failIfEmpty — needed here since the package has no
-# links yet. Tracked upstream at Morrison-Lab/gha#91; revert to the wrapper once
-# Morrison-Lab/gha#92 merges and the v1 tag is updated.
+# Workflow derived from https://github.com/Morrison-Lab/gha/blob/main/examples/check-links.yml
+# The calling job grants issues:write so the workflow can open an issue when
+# links break on main; repos default to a read-only token.
 name: Check Links
 
 on:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
   pull_request:
     types: [opened, synchronize, reopened, labeled, unlabeled]
   schedule:
@@ -16,21 +13,13 @@ on:
     - cron: '0 9 * * 1'
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
-  link-checker:
-    runs-on: ubuntu-latest
+  check:
     permissions:
       contents: read
       issues: write
       pull-requests: read
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Check links
-        uses: lycheeverse/lychee-action@v2
-        with:
-          args: --verbose --no-progress './**/*.md' './**/*.qmd' './**/*.html'
-          failIfEmpty: false
-          fail: true
-        env:
-          GITHUB_TOKEN: ${{ github.token }}
+    uses: Morrison-Lab/gha/.github/workflows/check-links.yml@v2

@@ -1,0 +1,17 @@
+# Workflow derived from https://github.com/Morrison-Lab/gha/blob/main/examples/lint-changed-lines.yml
+# lintr over only the lines a pull request adds or modifies, so new and
+# edited code must pass lint while untouched legacy code is left alone.
+# Morrison-Lab/qwt, qbt, and rpt each lint changed files with a hand-rolled
+# copy of this; the shared workflow narrows it to changed lines, which suits
+# a package with an existing lint backlog.
+name: lint-changed-lines
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    uses: Morrison-Lab/gha/.github/workflows/lint-changed-lines.yml@v2

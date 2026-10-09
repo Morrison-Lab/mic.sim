@@ -1,0 +1,12 @@
+# Keep the pinned GitHub Actions (including the Morrison-Lab/gha major tags)
+# current. Dependabot opens a PR when a newer release is available.
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    commit-message:
+      prefix: "chore(actions)"
